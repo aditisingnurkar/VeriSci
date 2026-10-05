@@ -1,58 +1,94 @@
 def aggregate_predictions(predictions):
     """
     Aggregates ML predictions on individual evidence passages into a final verdict.
-    
-    predictions: list of dicts:
-      {
-        "evidence": "...",
-        "prediction": "SUPPORT" | "CONTRADICT" | "NEUTRAL",
-        "confidence": float,
-        "relevance_score": float
-      }
-      
-    Returns:
-      dict with final_verdict, counts, and aggregated confidence.
     """
     support_count = sum(1 for p in predictions if p['prediction'] == 'SUPPORT')
     contradict_count = sum(1 for p in predictions if p['prediction'] == 'CONTRADICT')
     neutral_count = sum(1 for p in predictions if p['prediction'] == 'NEUTRAL')
     
-    total = len(predictions)
+    unique_papers = len(set(p.get('doc_id', p.get('document_id')) for p in predictions))
     
-    if total == 0:
+    counts = {
+        "support": support_count,
+        "contradict": contradict_count,
+        "neutral": neutral_count,
+        "papers": unique_papers
+    }
+    
+    if not predictions:
         return {
-            "verdict": "INCONCLUSIVE",
-            "confidence": 0.0,
-            "supporting_count": 0,
-            "contradicting_count": 0,
-            "neutral_count": 0
+            "verdict": "INSUFFICIENT",
+            "strength": "WEAK",
+            "score": 0.0,
+            "reason": "No relevant evidence found.",
+            "counts": counts
         }
-
-    # Weighting logic (optional, but requested to consider ML confidence)
-    support_score = sum(p['confidence'] for p in predictions if p['prediction'] == 'SUPPORT')
-    contradict_score = sum(p['confidence'] for p in predictions if p['prediction'] == 'CONTRADICT')
+        
+    # Aggregate at document level (best evidence per paper)
+    doc_scores = {}
+    for p in predictions:
+        doc_id = p.get('doc_id', p.get('document_id'))
+        pred = p['prediction']
+        # Weight each passage's vote by classifier_prob * relevance
+        weight = p['confidence'] * p['relevance_score']
+        
+        if doc_id not in doc_scores:
+            doc_scores[doc_id] = {"SUPPORT": 0.0, "CONTRADICT": 0.0, "NEUTRAL": 0.0}
+            
+        doc_scores[doc_id][pred] = max(doc_scores[doc_id][pred], weight)
+        
+    total_support_weight = sum(scores["SUPPORT"] for scores in doc_scores.values())
+    total_contradict_weight = sum(scores["CONTRADICT"] for scores in doc_scores.values())
     
-    # Verdict Rules:
-    # If there is strong supporting evidence and little/no contradicting
-    if support_score > contradict_score and support_count > 0 and (support_count > contradict_count):
-        verdict = "LIKELY SUPPORTED"
-        confidence = support_score / (support_score + contradict_score + 1e-9)
-    # If there is strong contradicting evidence
-    elif contradict_score > support_score and contradict_count > 0 and (contradict_count > support_count):
-        verdict = "LIKELY CONTRADICTED"
-        confidence = contradict_score / (support_score + contradict_score + 1e-9)
-    # If neither (mostly neutral or conflicting)
+    total_non_neutral = total_support_weight + total_contradict_weight
+    
+    # Verdict rules
+    THRESHOLD = 0.01  # Minimum non-neutral weight to make a call
+    DOMINANCE_RATIO = 2.0  # One side must be at least 2x the other
+    
+    if total_non_neutral < THRESHOLD:
+        verdict = "INSUFFICIENT"
+        reason = "Not enough relevant, non-neutral evidence to make a conclusion."
+        score = float(total_non_neutral)
     else:
-        verdict = "INCONCLUSIVE"
-        confidence = 0.5 # Neutral confidence
-
-    # Cap confidence at 1.0
-    confidence = min(confidence, 1.0)
-    
+        if total_support_weight > 0 and total_contradict_weight > 0:
+            ratio = max(total_support_weight, total_contradict_weight) / min(total_support_weight, total_contradict_weight)
+        else:
+            ratio = float('inf')
+            
+        if ratio >= DOMINANCE_RATIO:
+            if total_support_weight > total_contradict_weight:
+                verdict = "SUPPORTED"
+                reason = "Evidence clearly supports the claim."
+            else:
+                verdict = "CONTRADICTED"
+                reason = "Evidence clearly contradicts the claim."
+        else:
+            verdict = "MIXED"
+            reason = "The evidence is conflicting."
+            
+        score = float(max(total_support_weight, total_contradict_weight))
+        
+    # Strength logic
+    if verdict in ["SUPPORTED", "CONTRADICTED"]:
+        if unique_papers >= 3 and score > 0.1:
+            strength = "STRONG"
+        elif unique_papers >= 2 and score > 0.05:
+            strength = "MODERATE"
+        else:
+            strength = "WEAK"
+    elif verdict == "MIXED":
+        if unique_papers >= 4:
+            strength = "STRONG"
+        else:
+            strength = "MODERATE"
+    else:
+        strength = "WEAK"
+        
     return {
         "verdict": verdict,
-        "confidence": round(float(confidence), 2),
-        "supporting_count": support_count,
-        "contradicting_count": contradict_count,
-        "neutral_count": neutral_count
+        "strength": strength,
+        "score": score,
+        "reason": reason,
+        "counts": counts
     }

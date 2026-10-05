@@ -1,78 +1,56 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation, Navigate } from 'react-router-dom';
-import AnalysisProgress from '../components/AnalysisProgress';
+import { AlertCircle, RotateCcw } from 'lucide-react';
 
 export default function Analysis() {
-  const [step, setStep] = useState(1);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
   const claim = location.state?.claim;
 
-  useEffect(() => {
+  const analyzeClaim = async () => {
     if (!claim) return;
-
-    let isMounted = true;
-
-    async function analyzeClaim() {
-      try {
-        setStep(1); // Received
-        await new Promise(r => setTimeout(r, 600));
-        
-        setStep(2); // Searching
-        // Call backend API for full verification
-        const response = await fetch('http://127.0.0.1:8000/api/verify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ claim, top_k: 5 })
-        });
-        
-        if (!response.ok) {
-           throw new Error("Failed to verify claim");
-        }
-        
-        const data = await response.json();
-        
-        if (!isMounted) return;
-
-        setStep(3); // Analyzing
-        setStep(4); // Preparing verdict
-
-        // Format evidence for results page, matching what UI expects
-        const formattedEvidence = data.evidence.map((ev) => ({
-           id: ev.document_id + "_" + Math.random().toString(36).substr(2, 9),
-           title: ev.title,
-           snippet: ev.evidence_text,
-           prediction: ev.prediction,
-           confidence: Math.round(ev.confidence * 100),
-           relevanceScore: ev.relevance_score,
-           source: ev.source
-        }));
-
-        navigate('/results', { 
-           state: { 
-             claim,
-             verdict: data.verdict,
-             confidence: data.confidence,
-             supportingCount: data.supportingCount,
-             contradictingCount: data.contradictingCount,
-             neutralCount: data.neutralCount,
-             evidence: formattedEvidence 
-           } 
-        });
-
-      } catch (error) {
-        console.error(error);
-        if (isMounted) {
-           alert("Error retrieving evidence. Is the backend running at port 8000?");
-           navigate('/');
-        }
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+      const response = await fetch(`${apiUrl}/api/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ claim, top_k: 5 })
+      });
+      
+      if (!response.ok) {
+         throw new Error(`Server returned ${response.status}: ${response.statusText}`);
       }
+      
+      const data = await response.json();
+      
+      navigate('/results', { 
+         state: { 
+           claim: data.claim,
+           verdict: data.verdict,
+           strength: data.strength,
+           score: data.score,
+           reason: data.reason,
+           counts: data.counts,
+           evidence: data.evidence,
+           model: data.model
+         } 
+      });
+
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Failed to connect to the backend.");
+      setLoading(false);
     }
+  };
 
+  useEffect(() => {
     analyzeClaim();
-
-    return () => { isMounted = false; };
-  }, [claim, navigate]);
+  }, [claim]);
 
   if (!claim) {
     return <Navigate to="/" replace />;
@@ -86,7 +64,25 @@ export default function Analysis() {
           "{claim}"
         </h1>
       </div>
-      <AnalysisProgress currentStep={step} />
+      
+      {loading ? (
+        <div className="flex flex-col items-center space-y-4">
+          <div className="w-12 h-12 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
+          <p className="text-slate-600">Cross-referencing scientific literature...</p>
+        </div>
+      ) : error ? (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl max-w-md text-center">
+          <AlertCircle className="w-8 h-8 mx-auto mb-3 text-red-500" />
+          <h3 className="font-bold mb-2">Analysis Failed</h3>
+          <p className="text-sm mb-4">{error}</p>
+          <button 
+            onClick={analyzeClaim}
+            className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+          >
+            <RotateCcw className="w-4 h-4 mr-2" /> Retry Analysis
+          </button>
+        </div>
+      ) : null}
     </main>
   );
 }

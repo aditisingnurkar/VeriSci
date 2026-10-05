@@ -15,6 +15,14 @@ ENV/
 .venv/
 .pytest_cache/
 
+# Data and Artifacts
+backend/data/
+*.pkl
+models/
+saved_index/
+data.tar.gz
+._*
+
 # OS
 .DS_Store
 Thumbs.db

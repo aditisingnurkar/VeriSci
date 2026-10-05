@@ -1,11 +1,12 @@
 import numpy as np
 import scipy.sparse as sp
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+import re
 
 class FeatureExtractor:
     def __init__(self):
         self.vectorizer = TfidfVectorizer(stop_words='english', max_features=5000)
+        self.negation_cues = ["not", "no", "without", "fail", "lack", "unchanged", "reduced", "increased", "decreased"]
         
     def fit(self, claims, evidences):
         texts = claims.tolist() + evidences.tolist()
@@ -15,22 +16,39 @@ class FeatureExtractor:
         claim_tfidf = self.vectorizer.transform(claims)
         evidence_tfidf = self.vectorizer.transform(evidences)
         
-        # Calculate cosine similarity for each pair
-        # We can do this efficiently by computing row-wise dot products if normalized,
-        # but TfidfVectorizer returns normalized vectors by default.
         similarities = claim_tfidf.multiply(evidence_tfidf).sum(axis=1) # (N, 1) matrix
         
-        # We can also compute length differences
         claim_lens = np.array([len(c.split()) for c in claims]).reshape(-1, 1)
         evidence_lens = np.array([len(e.split()) for e in evidences]).reshape(-1, 1)
         
-        # Combine everything: claim_tfidf, evidence_tfidf, similarities
+        # Word overlap
+        overlap = []
+        for c, e in zip(claims, evidences):
+            c_words = set(c.lower().split())
+            e_words = set(e.lower().split())
+            overlap.append(len(c_words.intersection(e_words)) / max(1, len(c_words)))
+        overlap = np.array(overlap).reshape(-1, 1)
+        
+        # Negation cue flags
+        neg_flags = []
+        for c, e in zip(claims, evidences):
+            c_lower = c.lower()
+            e_lower = e.lower()
+            flags = []
+            for cue in self.negation_cues:
+                flags.append(1 if cue in c_lower else 0)
+                flags.append(1 if cue in e_lower else 0)
+            neg_flags.append(flags)
+        neg_flags = np.array(neg_flags)
+        
         features = sp.hstack([
             claim_tfidf, 
             evidence_tfidf, 
             similarities,
             claim_lens,
-            evidence_lens
+            evidence_lens,
+            overlap,
+            neg_flags
         ])
         
         return features

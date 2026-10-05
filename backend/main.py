@@ -1,22 +1,36 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from contextlib import asynccontextmanager
 import sys
 import os
+import logging
 
-# Add the parent directory to the path so we can import retrieval
 sys.path.append(os.path.dirname(__file__))
 
 from retrieval.retrieve import retrieve_evidence, load_index
-from ml.inference import classify_evidence
+from ml.inference import classify_evidence, classifier
 from aggregation import aggregate_predictions
 
-app = FastAPI(title="VeriSci Backend - Phase 2")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        load_index()
+    except Exception as e:
+        logging.warning(f"Could not load index on startup. {e}")
+    try:
+        classifier.load()
+    except Exception as e:
+        logging.warning(f"Could not load classifier on startup. {e}")
+    yield
+
+app = FastAPI(title="VeriSci Backend", lifespan=lifespan)
 
 # Allow frontend requests
+FRONTEND_URL = os.getenv("VITE_API_URL", "http://localhost:5173")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # For dev
+    allow_origins=[FRONTEND_URL, "http://127.0.0.1:5173"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -29,90 +43,90 @@ class ClassifyRequest(BaseModel):
     claim: str
     evidence: list[str]
 
-@app.on_event("startup")
-def startup_event():
-    try:
-        # Preload the index so first request is fast
-        load_index()
-    except Exception as e:
-        print(f"Warning: Could not load index on startup. {e}")
+@app.get("/api/health")
+def health_check():
+    return {"status": "ok"}
 
 @app.post("/api/retrieve")
 def retrieve(req: ClaimRequest):
-    if not req.claim.strip():
-        raise HTTPException(status_code=400, detail="Claim cannot be empty")
-        
+    claim = req.claim.strip()
+    if not claim or len(claim) > 1000:
+        raise HTTPException(status_code=400, detail="Claim length invalid")
+    
+    top_k = min(max(req.top_k, 1), 20)
     try:
-        results = retrieve_evidence(req.claim, top_k=req.top_k)
+        results = retrieve_evidence(claim, top_k=top_k)
         return {"evidence": results}
     except FileNotFoundError:
         raise HTTPException(status_code=503, detail="Index not built yet.")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logging.error(f"Retrieve error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.post("/api/verify")
 def verify(req: ClaimRequest):
-    if not req.claim.strip():
-        raise HTTPException(status_code=400, detail="Claim cannot be empty")
+    claim = req.claim.strip()
+    if not claim or len(claim) > 1000:
+        raise HTTPException(status_code=400, detail="Claim length invalid")
         
+    top_k = min(max(req.top_k, 1), 20)
     try:
-        # Phase 2: Retrieve
-        retrieved = retrieve_evidence(req.claim, top_k=req.top_k)
+        retrieved = retrieve_evidence(claim, top_k=top_k)
         
         if not retrieved:
             return {
-                "claim": req.claim,
-                "verdict": "INCONCLUSIVE",
-                "confidence": 0.0,
+                "claim": claim,
+                "verdict": "INSUFFICIENT",
+                "strength": "WEAK",
+                "score": 0.0,
+                "reason": "No relevant evidence found.",
+                "counts": {"support": 0, "contradict": 0, "neutral": 0, "papers": 0},
                 "evidence": [],
-                "supportingCount": 0,
-                "contradictingCount": 0,
-                "neutralCount": 0
+                "model": {"retriever": "TF-IDF", "classifier": "Linear SVM", "version": "1.0"}
             }
             
         evidence_texts = [ev["evidence_text"] for ev in retrieved]
+        ml_results = classify_evidence(claim, evidence_texts)
         
-        # Phase 3: Classify
-        ml_results = classify_evidence(req.claim, evidence_texts)
-        
-        # Combine retrieve and ML results for aggregation
         predictions = []
         for ev, ml in zip(retrieved, ml_results):
             predictions.append({
-                "document_id": ev["document_id"],
+                "doc_id": ev["doc_id"],
                 "title": ev["title"],
                 "evidence_text": ev["evidence_text"],
+                "sentence_idx": ev.get("sentence_idx", 0),
                 "relevance_score": ev["relevance_score"],
                 "source": ev["source"],
                 "prediction": ml["prediction"],
                 "confidence": ml["confidence"]
             })
             
-        # Phase 4: Aggregate
         agg_result = aggregate_predictions(predictions)
         
         return {
-            "claim": req.claim,
+            "claim": claim,
             "verdict": agg_result["verdict"],
-            "confidence": agg_result["confidence"],
+            "strength": agg_result["strength"],
+            "score": agg_result["score"],
+            "reason": agg_result["reason"],
+            "counts": agg_result["counts"],
             "evidence": predictions,
-            "supportingCount": agg_result["supporting_count"],
-            "contradictingCount": agg_result["contradicting_count"],
-            "neutralCount": agg_result["neutral_count"]
+            "model": {"retriever": "TF-IDF", "classifier": "Linear SVM", "version": "1.0"}
         }
     except FileNotFoundError as e:
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logging.error(f"Verify error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.post("/api/classify")
 def classify(req: ClassifyRequest):
-    if not req.claim.strip():
-        raise HTTPException(status_code=400, detail="Claim cannot be empty")
+    claim = req.claim.strip()
+    if not claim or len(claim) > 1000:
+        raise HTTPException(status_code=400, detail="Claim length invalid")
         
     try:
-        results = classify_evidence(req.claim, req.evidence)
-        # Format the output to map each evidence string to its prediction
+        results = classify_evidence(claim, req.evidence)
         formatted_results = []
         for ev, res in zip(req.evidence, results):
             formatted_results.append({
@@ -124,4 +138,5 @@ def classify(req: ClassifyRequest):
     except FileNotFoundError:
         raise HTTPException(status_code=503, detail="Model not trained yet.")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logging.error(f"Classify error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")

@@ -43,18 +43,14 @@ class EvidenceClassifier:
         # Predict
         predictions = self.model.predict(X)
         
-        # Get confidences
-        if hasattr(self.model, "predict_proba"):
-            probs = self.model.predict_proba(X)
-            confidences = np.max(probs, axis=1)
-        else:
-            # Fallback if the model doesn't support probabilities (e.g. Linear SVM without probability=True)
-            confidences = [1.0] * len(predictions)
+        # Get confidences using predict_proba (model is SVM with probability=True)
+        probs = self.model.predict_proba(X)
+        confidences = np.max(probs, axis=1)
             
         results = []
         for pred, conf in zip(predictions, confidences):
             results.append({
-                "prediction": pred,
+                "prediction": str(pred),
                 "confidence": float(conf)
             })
             

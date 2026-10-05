@@ -1,5 +1,11 @@
-import { exampleClaims } from '../data/mockData';
 import { Lightbulb } from 'lucide-react';
+
+const exampleClaims = [
+  "Mice lacking c-rel are protected against experimental autoimmune encephalomyelitis.",
+  "Vaccines cause infertility.",
+  "Vaccines do not cause infertility.",
+  "The moon is made of cheese and pasta."
+];
 
 export default function ExampleClaims({ onSelect }) {
   return (

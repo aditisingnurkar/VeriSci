@@ -1,12 +1,12 @@
 import json
 import os
 
-def load_corpus(corpus_path):
+def load_documents(corpus_path):
     """
     Reads the SciFact corpus.jsonl file.
-    Returns a list of dictionaries, where each dict is a sentence/passage.
+    Returns a list of dictionaries, where each dict is a document with sentences.
     """
-    passages = []
+    documents = []
     if not os.path.exists(corpus_path):
         raise FileNotFoundError(f"Corpus file not found: {corpus_path}")
         
@@ -17,12 +17,13 @@ def load_corpus(corpus_path):
             title = doc['title']
             abstract = doc.get('abstract', [])
             
-            for idx, sentence in enumerate(abstract):
-                passages.append({
-                    "id": f"{doc_id}_{idx}",
-                    "doc_id": doc_id,
-                    "title": title,
-                    "sentence_idx": idx,
-                    "text": sentence
-                })
-    return passages
+            # Document text for doc-level retrieval
+            doc_text = title + " " + " ".join(abstract)
+            
+            documents.append({
+                "doc_id": doc_id,
+                "title": title,
+                "text": doc_text,
+                "sentences": abstract
+            })
+    return documents

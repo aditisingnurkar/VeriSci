@@ -1,41 +1,17 @@
 import { useLocation, Navigate, Link } from 'react-router-dom';
-import { mockData } from '../data/mockData';
 import EvidenceCard from '../components/EvidenceCard';
-import ExplanationCard from '../components/ExplanationCard';
-import ClaimChat from '../components/ClaimChat';
-import { ArrowLeft, CheckCircle, AlertCircle, AlertTriangle, FileText, Activity } from 'lucide-react';
-import { cn } from '../lib/utils';
+import VerdictCard from '../components/VerdictCard';
+import { ArrowLeft, FileText, CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react';
 
 export default function Results() {
   const location = useLocation();
-  const stateClaim = location.state?.claim;
-  const retrievedEvidence = location.state?.evidence;
-  
-  const data = { 
-    ...mockData, 
-    claim: stateClaim || mockData.claim,
-    verdict: location.state?.verdict || mockData.verdict,
-    verdictConfidence: location.state?.confidence !== undefined ? Math.round(location.state.confidence * 100) : mockData.verdictConfidence,
-    supportingCount: location.state?.supportingCount !== undefined ? location.state.supportingCount : mockData.supportingCount,
-    contradictingCount: location.state?.contradictingCount !== undefined ? location.state.contradictingCount : mockData.contradictingCount,
-    neutralCount: location.state?.neutralCount !== undefined ? location.state.neutralCount : mockData.neutralCount,
-    evidence: retrievedEvidence || mockData.evidence
-  };
+  const data = location.state;
 
-  if (!stateClaim && !mockData) {
+  if (!data || !data.claim) {
     return <Navigate to="/" replace />;
   }
 
-  let Icon = AlertTriangle;
-  let colorClass = "text-yellow-700 bg-yellow-50 border-yellow-200";
-  
-  if (data.verdict.includes("SUPPORTED")) {
-    Icon = CheckCircle;
-    colorClass = "text-emerald-700 bg-emerald-50 border-emerald-200";
-  } else if (data.verdict.includes("CONTRADICTED")) {
-    Icon = AlertCircle;
-    colorClass = "text-rose-700 bg-rose-50 border-rose-200";
-  }
+  const { claim, verdict, strength, reason, counts, evidence, model } = data;
 
   return (
     <main className="flex-grow bg-slate-50/50 py-8 px-4 sm:px-6 lg:px-8">
@@ -47,87 +23,60 @@ export default function Results() {
             Verify another claim
           </Link>
           
-          {/* PRIORITY 1: THE CLAIM */}
-          <section className="mb-10 bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
-            <h1 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-4 flex items-center gap-2">
-              Claim Under Verification
-            </h1>
-            <div className="text-2xl sm:text-3xl font-bold text-slate-900 border-l-4 border-blue-600 pl-5 py-1">
-              "{data.claim}"
-            </div>
-            <p className="text-sm text-slate-600 mt-4 ml-6">
-              We retrieved {data.evidence.length} relevant scientific passages to verify this claim.
-            </p>
-          </section>
+          <VerdictCard 
+            verdict={verdict} 
+            claim={claim} 
+            strength={strength} 
+            reason={reason} 
+          />
         </div>
 
-        {/* PRIORITY 2: THE ACTUAL EVIDENCE (Show the facts first before the flawed ML model) */}
+        {/* Evidence Breakdown */}
+        {counts?.papers > 0 && (
+          <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-6 justify-between items-center">
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-widest text-slate-500 mb-1">Evidence Breakdown</h3>
+              <p className="text-slate-600 text-sm">Analyzed {counts.support + counts.contradict + counts.neutral} passages from {counts.papers} studies.</p>
+            </div>
+            <div className="flex flex-wrap gap-4">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg border border-green-100">
+                <CheckCircle className="w-4 h-4" />
+                <span className="font-bold">{counts.support} Support</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-700 rounded-lg border border-red-100">
+                <AlertCircle className="w-4 h-4" />
+                <span className="font-bold">{counts.contradict} Contradict</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg border border-slate-200">
+                <AlertTriangle className="w-4 h-4" />
+                <span className="font-bold">{counts.neutral} Neutral</span>
+              </div>
+            </div>
+          </section>
+        )}
+
         <section className="space-y-6">
-          <div className="flex items-center gap-2 border-b border-slate-200 pb-4">
-            <FileText className="w-6 h-6 text-slate-800" />
-            <h2 className="text-2xl font-bold text-slate-900">Retrieved Scientific Evidence</h2>
+          <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+            <div className="flex items-center gap-2">
+              <FileText className="w-6 h-6 text-slate-800" />
+              <h2 className="text-2xl font-bold text-slate-900">Retrieved Scientific Evidence</h2>
+            </div>
           </div>
           
           <div className="space-y-6">
-            {data.evidence.map((ev, index) => (
-              <EvidenceCard key={ev.id} evidence={ev} index={index + 1} />
+            {evidence?.map((ev, index) => (
+              <EvidenceCard key={`${ev.doc_id}_${ev.sentence_idx}`} evidence={ev} index={index + 1} />
             ))}
-            {data.evidence.length === 0 && (
+            {(!evidence || evidence.length === 0) && (
               <p className="text-slate-500 italic p-6 bg-white rounded-xl border border-slate-200">No evidence was retrieved for this claim.</p>
             )}
           </div>
         </section>
 
-        {/* PRIORITY 3: MACHINE LEARNING ASSESSMENT (Positioned appropriately after evidence) */}
-        <section className="mt-12 bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="flex items-center gap-2 mb-8 border-b border-slate-100 pb-4">
-            <Activity className="w-6 h-6 text-blue-600" />
-            <h2 className="text-xl font-bold text-slate-900">Machine Learning Assessment (Phase 3)</h2>
-          </div>
-          
-          <div className={cn("p-6 rounded-xl border mb-8", colorClass)}>
-            <div className="flex flex-col sm:flex-row items-center gap-6">
-              <Icon className="w-12 h-12 shrink-0" />
-              <div>
-                <h3 className="text-sm font-bold uppercase tracking-widest opacity-80 mb-1">System Verdict</h3>
-                <div className="text-2xl font-bold mb-2">{data.verdict}</div>
-                <p className="text-sm opacity-90">
-                  <strong>Note:</strong> This is a preliminary classification generated by a classical TF-IDF model. It may struggle with semantic nuances such as negation in the text above. 
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          <div>
-            <h3 className="text-sm font-semibold uppercase tracking-widest text-slate-500 mb-4">Evidence Breakdown</h3>
-            <div className="flex flex-wrap gap-4">
-              <div className="flex items-center gap-3 px-4 py-2 bg-slate-50 rounded-lg border border-slate-100">
-                <span className="text-2xl font-bold text-green-600">{data.supportingCount}</span>
-                <span className="text-xs font-semibold uppercase tracking-widest text-slate-500">Supports</span>
-              </div>
-              <div className="flex items-center gap-3 px-4 py-2 bg-slate-50 rounded-lg border border-slate-100">
-                <span className="text-2xl font-bold text-red-600">{data.contradictingCount}</span>
-                <span className="text-xs font-semibold uppercase tracking-widest text-slate-500">Contradicts</span>
-              </div>
-              <div className="flex items-center gap-3 px-4 py-2 bg-slate-50 rounded-lg border border-slate-100">
-                <span className="text-2xl font-bold text-slate-600">{data.neutralCount}</span>
-                <span className="text-xs font-semibold uppercase tracking-widest text-slate-500">Neutral</span>
-              </div>
-            </div>
-          </div>
+        <section className="text-xs text-slate-400 text-center pt-8 border-t border-slate-200">
+          <p>This verification was generated automatically by {model?.classifier} (via {model?.retriever}). It is based only on the SciFact corpus and is not medical or professional advice.</p>
         </section>
 
-        {/* PRIORITY 4: RAG EXPLANATION PLACEHOLDER */}
-        <section className="pt-4">
-          <h2 className="text-lg font-bold text-slate-900 mb-4">Detailed Explanation (Phase 5 Placeholder)</h2>
-          <ExplanationCard explanation={data.explanation} />
-        </section>
-
-        {/* PRIORITY 5: ASK ABOUT THIS CLAIM */}
-        <section className="pt-8">
-          <ClaimChat />
-        </section>
-        
       </div>
     </main>
   );

@@ -2,7 +2,7 @@ import { cn } from '../lib/utils';
 import { ExternalLink, Database, Network } from 'lucide-react';
 
 export default function EvidenceCard({ evidence, index }) {
-  const { title, snippet, prediction, confidence, relevanceScore, source } = evidence;
+  const { title, evidence_text, prediction, confidence, relevance_score, source } = evidence;
 
   const isSupport = prediction === 'SUPPORT';
   const isContradict = prediction === 'CONTRADICT';
@@ -19,27 +19,21 @@ export default function EvidenceCard({ evidence, index }) {
             </span>
             <div className="flex items-center text-xs text-slate-500 font-medium truncate">
               <Database className="w-3 h-3 mr-1 shrink-0" />
-              <span className="truncate">{source}</span>
+              <span className="truncate">{source || "SciFact"}</span>
             </div>
           </div>
           
           <h4 className="font-semibold text-slate-900 leading-snug mb-4">{title}</h4>
           
           <div className="bg-slate-50 border-l-4 border-slate-300 p-4 rounded-r-xl text-sm text-slate-700 italic mb-4">
-            "{snippet}"
+            "{evidence_text}"
           </div>
         </div>
         
         <div className="flex items-center gap-4 text-xs mt-4 pt-4 border-t border-slate-100">
           <div className="flex flex-col">
             <span className="text-slate-500 font-medium">Relevance to claim</span>
-            <span className="font-semibold text-slate-900">{(relevanceScore * 100).toFixed(0)}%</span>
-          </div>
-          
-          <div className="ml-auto">
-            <button className="text-blue-600 hover:text-blue-800 transition-colors text-sm font-medium flex items-center">
-              View source <ExternalLink className="w-4 h-4 ml-1" />
-            </button>
+            <span className="font-semibold text-slate-900">{(relevance_score * 100).toFixed(0)}%</span>
           </div>
         </div>
       </div>
@@ -66,7 +60,7 @@ export default function EvidenceCard({ evidence, index }) {
         </div>
         
         <div className="flex flex-col">
-          <span className="text-2xl font-bold text-slate-900">{confidence}%</span>
+          <span className="text-2xl font-bold text-slate-900">{(confidence * 100).toFixed(0)}%</span>
           <span className="text-xs font-medium text-slate-500">confidence</span>
         </div>
       </div>
