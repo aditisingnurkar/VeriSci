@@ -107,12 +107,12 @@ def chat(verification_data, history, message):
             citation_objects = []
             for cid in response_json.get("citations", []):
                 for ev in verification_data.get("evidence", []):
-                    if ev["evidence_id"] == cid:
+                    if ev.get("evidence_id") == cid:
                         citation_objects.append({
                             "evidence_id": cid,
-                            "title": ev["title"],
-                            "source": ev["source"],
-                            "source_id": ev["source_id"],
+                            "title": ev.get("title", ""),
+                            "source": ev.get("source", "SciFact"),
+                            "source_id": str(ev.get("source_id", ev.get("doc_id", ""))),
                             "url": ev.get("url", "")
                         })
                         break
@@ -127,3 +127,4 @@ def chat(verification_data, history, message):
         "citations": [],
         "answerable": False
     }
+

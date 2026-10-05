@@ -8,6 +8,9 @@ import logging
 import uuid
 import time
 import asyncio
+from dotenv import load_dotenv
+
+load_dotenv()
 
 sys.path.append(os.path.dirname(__file__))
 

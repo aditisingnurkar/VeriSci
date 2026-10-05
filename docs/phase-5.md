@@ -18,7 +18,7 @@ To ensure maximum safety in a health/biomedical context, we deployed strict serv
 4. **Fallback Scenarios**: If the LLM generates ungrounded data twice, or if the API key is missing/timeouts, the system gracefully degrades, providing a templated textual summary (e.g., "Analyzed 10 passages from 3 studies...").
 
 ## Tech Stack & Configuration
-- **Model**: Default `gemini-2.5-flash` using `generativelanguage.googleapis.com`.
+- **Model**: Default `gemini-3.1-flash-lite` (with automatic fallback to `gemini-3.8-flash`, `gemini-3.5-flash`, and `gemma-4-26b-a4b-it`) using `generativelanguage.googleapis.com`.
 - **Environment**: Configured via `LLM_PROVIDER`, `GEMINI_API_KEY`, or `LLM_API_KEY`.
 - **Frontend**: Integrated via `ClaimChat.jsx` and `ExplanationCard.jsx`.
 
