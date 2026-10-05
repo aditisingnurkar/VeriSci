@@ -88,6 +88,8 @@ def retrieve(req: ClaimRequest):
     top_k = min(max(req.top_k, 1), 20)
     try:
         results = retrieve_evidence(claim, top_k=top_k)
+        if len(results) > 0 and results[0].get("out_of_scope"):
+            return {"evidence": [], "out_of_scope": True}
         return {"evidence": results}
     except FileNotFoundError:
         raise HTTPException(status_code=503, detail="Index not built yet.")
@@ -108,7 +110,7 @@ def verify(req: ClaimRequest):
         retrieved = retrieve_evidence(claim, top_k=top_k)
         
         sources_used = ["SciFact"]
-        if os.environ.get("ENABLE_PUBMED", "false").lower() == "true":
+        if os.environ.get("ENABLE_PUBMED", "true").lower() != "false":
             sources_used.append("PubMed")
         
         if not retrieved:
@@ -122,7 +124,7 @@ def verify(req: ClaimRequest):
                 "reason": "We searched our sources and found no relevant studies.",
                 "counts": {"support": 0, "contradict": 0, "neutral": 0, "papers": 0},
                 "evidence": [],
-                "model": {"retriever": "TF-IDF", "classifier": "Linear SVM", "version": "1.0"},
+                "model": {"retriever": "SciFact TF-IDF + PubMed Live", "classifier": "Hybrid Transformer NLI + Linear SVM", "version": "2.0"},
                 "sources_used": sources_used
             }
         else:
@@ -137,7 +139,7 @@ def verify(req: ClaimRequest):
                     "reason": "This tool verifies biomedical/health claims. This claim looks outside that scope.",
                     "counts": {"support": 0, "contradict": 0, "neutral": 0, "papers": 0},
                     "evidence": [],
-                    "model": {"retriever": "TF-IDF", "classifier": "Linear SVM", "version": "1.0"},
+                    "model": {"retriever": "SciFact TF-IDF + PubMed Live", "classifier": "Hybrid Transformer NLI + Linear SVM", "version": "2.0"},
                     "sources_used": sources_used
                 }
             else:
@@ -149,6 +151,7 @@ def verify(req: ClaimRequest):
                     predictions.append({
                         "evidence_id": f"E{idx+1}",
                         "source": ev.get("source", "SciFact"),
+                        "doc_id": str(ev.get("doc_id", "")),
                         "source_id": str(ev.get("doc_id", "")),
                         "url": ev.get("url", ""),
                         "title": ev["title"],
@@ -173,7 +176,7 @@ def verify(req: ClaimRequest):
                     "reason": agg_result["reason"],
                     "counts": agg_result["counts"],
                     "evidence": predictions,
-                    "model": {"retriever": "TF-IDF", "classifier": "Linear SVM", "version": "1.0"},
+                    "model": {"retriever": "SciFact TF-IDF + PubMed Live", "classifier": "Hybrid Transformer NLI + Linear SVM", "version": "2.0"},
                     "sources_used": sources_used
                 }
                 

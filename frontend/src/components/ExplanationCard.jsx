@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, AlertCircle, Loader2 } from 'lucide-react';
+import { BookOpen, AlertCircle, Loader2, Cpu, Sparkles, ShieldAlert } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 export default function ExplanationCard({ verificationId }) {
@@ -31,7 +31,7 @@ export default function ExplanationCard({ verificationId }) {
         setExplanation(data);
       } catch (err) {
         console.error(err);
-        setError("AI explanation unavailable.");
+        setError("Evidence explanation synthesis offline.");
       } finally {
         setLoading(false);
       }
@@ -44,10 +44,10 @@ export default function ExplanationCard({ verificationId }) {
     const el = document.getElementById(`evidence-${cid}`);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      el.classList.add('ring-2', 'ring-blue-500', 'bg-blue-50');
+      el.classList.add('ring-2', 'ring-cyan-400', 'bg-[#0e352a]');
       setTimeout(() => {
-        el.classList.remove('ring-2', 'ring-blue-500', 'bg-blue-50');
-      }, 2000);
+        el.classList.remove('ring-2', 'ring-cyan-400', 'bg-[#0e352a]');
+      }, 2500);
     }
   };
 
@@ -63,7 +63,8 @@ export default function ExplanationCard({ verificationId }) {
           <button 
             key={i} 
             onClick={() => highlightEvidence(match[1])}
-            className="inline-flex items-center justify-center px-1.5 py-0.5 mx-1 rounded text-xs font-bold bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
+            className="inline-flex items-center justify-center px-2 py-0.5 mx-1 rounded-md text-xs font-mono font-bold bg-cyan-950/90 text-cyan-300 border border-cyan-400/40 hover:bg-cyan-400 hover:text-[#02140e] hover:border-cyan-300 transition-all cursor-pointer shadow-sm shadow-cyan-950/40"
+            title={`Jump to Citation [${match[1]}]`}
           >
             {match[1]}
           </button>
@@ -74,41 +75,52 @@ export default function ExplanationCard({ verificationId }) {
   };
 
   return (
-    <div className="bg-slate-900 text-slate-50 p-6 rounded-2xl shadow-sm w-full relative overflow-hidden">
-      <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
-        <BookOpen className="w-48 h-48" />
-      </div>
-      
+    <div className="bg-[#061813]/90 text-[#E6FFF8] p-6 sm:p-7 rounded-3xl border border-emerald-500/20 shadow-2xl backdrop-blur-xl w-full relative overflow-hidden flex flex-col justify-between">
+      {/* Ambient background glow */}
+      <div className="absolute top-0 right-0 w-48 h-48 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" />
+
       <div className="relative z-10">
-        <div className="flex items-center gap-2 mb-4 border-b border-slate-700 pb-4">
-          <BookOpen className="w-5 h-5 text-blue-400" />
-          <h3 className="text-lg font-semibold text-white">Analysis & Explanation</h3>
+        {/* Header HUD Bar */}
+        <div className="flex items-center justify-between gap-2 mb-5 border-b border-emerald-900/40 pb-3.5">
+          <div className="flex items-center gap-2">
+            <Cpu className="w-4 h-4 text-cyan-400" />
+            <h3 className="text-sm sm:text-base font-bold text-white font-display uppercase tracking-wider">
+              Neural Synthesis & Analysis
+            </h3>
+          </div>
+          <div className="flex items-center gap-1 text-[10px] font-mono text-emerald-400/70">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+            <span>GROUNDED_CITATIONS</span>
+          </div>
         </div>
         
         {loading && (
-          <div className="flex items-center gap-3 text-slate-400 py-4">
-            <Loader2 className="w-5 h-5 animate-spin text-blue-400" />
-            <span>Generating evidence-based explanation...</span>
+          <div className="flex items-center gap-3 text-emerald-400/80 py-8 justify-center font-mono text-xs">
+            <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
+            <span>Synthesizing scientific literature explanation...</span>
           </div>
         )}
         
         {error && !loading && (
-          <div className="flex items-center gap-2 text-slate-400 py-2">
-            <AlertCircle className="w-4 h-4 text-amber-500" />
-            <span className="text-sm italic">{error}</span>
+          <div className="flex items-center gap-2 text-rose-400 py-4 font-mono text-xs">
+            <AlertCircle className="w-4 h-4 text-rose-500" />
+            <span>{error}</span>
           </div>
         )}
         
         {explanation && !loading && (
           <div className="space-y-4">
-            <p className="text-slate-300 leading-relaxed text-sm">
+            <div className="text-emerald-100/90 leading-relaxed text-xs sm:text-sm font-sans bg-[#030d09]/60 p-4 rounded-xl border border-emerald-900/30">
               {renderTextWithCitations(explanation.explanation, explanation.citations)}
-            </p>
+            </div>
             
             {explanation.limitations && explanation.limitations.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-slate-800">
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Limitations</h4>
-                <ul className="list-disc list-inside text-xs text-slate-400 space-y-1">
+              <div className="mt-4 pt-3.5 border-t border-emerald-950/80">
+                <div className="flex items-center gap-1.5 text-[11px] font-mono font-semibold uppercase tracking-wider text-amber-400/90 mb-2">
+                  <ShieldAlert className="w-3.5 h-3.5" />
+                  <span>Analytical Considerations & Caveats</span>
+                </div>
+                <ul className="list-disc list-inside text-xs text-emerald-300/70 space-y-1 font-sans">
                   {explanation.limitations.map((lim, i) => (
                     <li key={i}>{lim}</li>
                   ))}

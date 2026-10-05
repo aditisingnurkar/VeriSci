@@ -63,14 +63,22 @@ def retrieve_evidence(claim: str, top_k: int = 5, doc_threshold: float = 0.05, s
     # Add PubMed docs
     try:
         from .pubmed import retrieve_from_pubmed
+        import re
         pubmed_docs = retrieve_from_pubmed(claim, top_k=top_k)
         for pdoc in pubmed_docs:
-            # Score PubMed docs using our vectorizer to keep scores comparable
+            # Score PubMed docs using vectorizer
             p_vec = _doc_vectorizer.transform([pdoc["title"] + " " + pdoc["abstract"]])
             p_score = float(cosine_similarity(claim_vec, p_vec).flatten()[0])
-            if p_score >= doc_threshold:
+            
+            # Word overlap fallback for terms outside SciFact vocabulary
+            claim_words = set(w.lower() for w in re.findall(r'\b[a-zA-Z0-9-]+\b', claim) if len(w) > 2)
+            doc_words = set(w.lower() for w in re.findall(r'\b[a-zA-Z0-9-]+\b', pdoc["title"] + " " + pdoc["abstract"]))
+            overlap = len(claim_words.intersection(doc_words)) / max(1, len(claim_words))
+            effective_score = max(p_score, overlap * 0.4)
+            
+            if effective_score >= doc_threshold:
                 candidate_docs.append({
-                    "doc_score": p_score,
+                    "doc_score": effective_score,
                     "doc": pdoc
                 })
     except ImportError:
@@ -81,6 +89,8 @@ def retrieve_evidence(claim: str, top_k: int = 5, doc_threshold: float = 0.05, s
     
     results = []
     seen_docs = set()
+    import re
+    claim_words = set(w.lower() for w in re.findall(r'\b[a-zA-Z0-9-]+\b', claim) if len(w) > 2)
     
     for cdoc in candidate_docs:
         doc_score = cdoc["doc_score"]
@@ -97,8 +107,16 @@ def retrieve_evidence(claim: str, top_k: int = 5, doc_threshold: float = 0.05, s
         # 2. Sentence-level retrieval within the doc
         sent_vecs = _doc_vectorizer.transform(sentences)
         sent_sims = cosine_similarity(claim_vec, sent_vecs).flatten()
-        best_sent_idx = int(sent_sims.argmax())
-        best_sent_score = float(sent_sims[best_sent_idx])
+        
+        sent_scores = []
+        for i, s in enumerate(sentences):
+            s_words = set(w.lower() for w in re.findall(r'\b[a-zA-Z0-9-]+\b', s))
+            s_overlap = len(claim_words.intersection(s_words)) / max(1, len(claim_words))
+            s_score = max(float(sent_sims[i]), s_overlap * 0.4)
+            sent_scores.append(s_score)
+            
+        best_sent_idx = int(np.argmax(sent_scores))
+        best_sent_score = float(sent_scores[best_sent_idx])
         
         if best_sent_score < sent_threshold:
             continue

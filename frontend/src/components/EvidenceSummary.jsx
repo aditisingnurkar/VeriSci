@@ -4,31 +4,33 @@ export default function EvidenceSummary({ supporting, contradicting, neutral }) 
   const total = supporting + contradicting + neutral;
 
   return (
-    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm w-full">
-      <div className="flex items-center gap-2 mb-6 border-b border-slate-100 pb-4">
-        <BarChart3 className="w-5 h-5 text-slate-500" />
-        <h3 className="text-lg font-semibold text-slate-900">Evidence Summary</h3>
+    <div className="bg-[#061813]/90 p-6 rounded-3xl border border-emerald-500/20 shadow-2xl backdrop-blur-xl w-full">
+      <div className="flex items-center gap-2 mb-5 border-b border-emerald-900/40 pb-3.5">
+        <BarChart3 className="w-4 h-4 text-cyan-400" />
+        <h3 className="text-sm sm:text-base font-bold text-white font-display uppercase tracking-wider">
+          Evidence Passage Aggregation
+        </h3>
       </div>
       
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex-1 flex flex-col items-center p-4 bg-green-50 rounded-xl border border-green-100">
-          <span className="text-3xl font-bold text-green-700">{supporting}</span>
-          <span className="text-xs font-semibold text-green-800 uppercase tracking-wide mt-1">Supports</span>
+      <div className="grid grid-cols-3 gap-3 font-mono">
+        <div className="flex flex-col items-center p-3.5 bg-[#042018]/90 rounded-2xl border border-emerald-500/30">
+          <span className="text-2xl sm:text-3xl font-extrabold text-emerald-300">{supporting}</span>
+          <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider mt-1">Supports</span>
         </div>
         
-        <div className="flex-1 flex flex-col items-center p-4 bg-red-50 rounded-xl border border-red-100">
-          <span className="text-3xl font-bold text-red-700">{contradicting}</span>
-          <span className="text-xs font-semibold text-red-800 uppercase tracking-wide mt-1">Contradicts</span>
+        <div className="flex flex-col items-center p-3.5 bg-[#25080e]/90 rounded-2xl border border-rose-500/30">
+          <span className="text-2xl sm:text-3xl font-extrabold text-rose-300">{contradicting}</span>
+          <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider mt-1">Contradicts</span>
         </div>
 
-        <div className="flex-1 flex flex-col items-center p-4 bg-slate-50 rounded-xl border border-slate-200">
-          <span className="text-3xl font-bold text-slate-700">{neutral}</span>
-          <span className="text-xs font-semibold text-slate-600 uppercase tracking-wide mt-1">Neutral</span>
+        <div className="flex flex-col items-center p-3.5 bg-[#071914]/90 rounded-2xl border border-emerald-900/40">
+          <span className="text-2xl sm:text-3xl font-extrabold text-emerald-100">{neutral}</span>
+          <span className="text-[10px] font-bold text-emerald-400/70 uppercase tracking-wider mt-1">Neutral</span>
         </div>
       </div>
 
-      <div className="mt-6 text-sm text-center text-slate-500">
-        Analyzed <span className="font-semibold text-slate-700">{total}</span> total scientific passages.
+      <div className="mt-4 text-xs font-mono text-center text-emerald-400/60">
+        Analyzed <span className="font-bold text-cyan-300">{total}</span> total scientific passages.
       </div>
     </div>
   );

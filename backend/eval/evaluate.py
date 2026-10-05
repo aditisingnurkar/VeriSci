@@ -40,7 +40,7 @@ def main():
             true_label = "SUPPORTED" if label == "SUPPORT" else "CONTRADICTED"
             
         retrieved = retrieve_evidence(claim, top_k=5)
-        if not retrieved:
+        if not retrieved or (len(retrieved) > 0 and retrieved[0].get("out_of_scope")):
             pred_label = "INSUFFICIENT"
         else:
             evidence_texts = [ev["evidence_text"] for ev in retrieved]
@@ -49,7 +49,7 @@ def main():
             predictions = []
             for ev, ml in zip(retrieved, ml_results):
                 predictions.append({
-                    "doc_id": ev["doc_id"],
+                    "doc_id": ev.get("doc_id", ""),
                     "prediction": ml["prediction"],
                     "confidence": ml["confidence"],
                     "relevance_score": ev["relevance_score"]

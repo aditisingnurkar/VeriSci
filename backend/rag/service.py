@@ -7,7 +7,7 @@ from .validators import validate_citations, validate_numbers_and_quotes, validat
 
 def explain(verification_data):
     context = build_context(verification_data)
-    prompt = EXPLAIN_PROMPT.format(context=context)
+    prompt = EXPLAIN_PROMPT.replace("{context}", context)
     
     valid_evidence_ids = [ev["evidence_id"] for ev in verification_data.get("evidence", [])]
     
@@ -66,7 +66,7 @@ def _fallback_explanation(verification_data):
 
 def chat(verification_data, history, message):
     context = build_context(verification_data)
-    prompt = CHAT_PROMPT.format(context=context)
+    prompt = CHAT_PROMPT.replace("{context}", context)
     
     valid_evidence_ids = [ev["evidence_id"] for ev in verification_data.get("evidence", [])]
     

@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Send, Sparkles, Loader2, AlertCircle } from 'lucide-react';
+import { Send, Sparkles, Loader2, AlertCircle, MessageSquare, Terminal } from 'lucide-react';
 
 export default function ClaimChat({ verificationId, verdict }) {
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: 'I can help you understand this claim based on the retrieved evidence. What would you like to know?', citations: [] }
+    { role: 'assistant', content: 'Neural query interface active. Ask any specific question regarding the retrieved scientific papers or statistical evidence.', citations: [] }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -12,16 +12,16 @@ export default function ClaimChat({ verificationId, verdict }) {
   const getSuggestedQuestions = () => {
     let questions = ["Explain this in simple language."];
     if (verdict === "CONTRADICTED") {
-      questions.unshift("Why is this claim considered contradicted?");
-      questions.push("What evidence supports the claim?");
+      questions.unshift("Why is this claim contradicted?");
+      questions.push("What do the strongest studies state?");
     } else if (verdict === "SUPPORTED") {
       questions.unshift("What evidence supports the claim?");
-      questions.push("What evidence contradicts it?");
+      questions.push("Are there any conflicting findings?");
     } else if (verdict === "MIXED") {
       questions.unshift("Why is the evidence conflicting?");
-      questions.push("Which study is the strongest?");
+      questions.push("Which study is the most conclusive?");
     } else {
-      questions.push("Is there any relevant information?");
+      questions.push("What related studies were found?");
     }
     return questions.slice(0, 3);
   };
@@ -30,10 +30,10 @@ export default function ClaimChat({ verificationId, verdict }) {
     const el = document.getElementById(`evidence-${cid}`);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      el.classList.add('ring-2', 'ring-blue-500', 'bg-blue-50');
+      el.classList.add('ring-2', 'ring-cyan-400', 'bg-[#0e352a]');
       setTimeout(() => {
-        el.classList.remove('ring-2', 'ring-blue-500', 'bg-blue-50');
-      }, 2000);
+        el.classList.remove('ring-2', 'ring-cyan-400', 'bg-[#0e352a]');
+      }, 2500);
     }
   };
 
@@ -54,7 +54,7 @@ export default function ClaimChat({ verificationId, verdict }) {
             key={i} 
             title={citeObj?.title}
             onClick={() => highlightEvidence(match[1])}
-            className="inline-flex items-center justify-center px-1.5 py-0.5 mx-1 rounded text-xs font-bold bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
+            className="inline-flex items-center justify-center px-1.5 py-0.5 mx-1 rounded text-xs font-mono font-bold bg-cyan-950 text-cyan-300 border border-cyan-400/50 hover:bg-cyan-400 hover:text-black transition-all cursor-pointer"
           >
             {match[1]}
           </button>
@@ -96,27 +96,33 @@ export default function ClaimChat({ verificationId, verdict }) {
       setMessages(prev => [...prev, { role: 'assistant', content: data.answer, citations: data.citations }]);
     } catch (err) {
       console.error(err);
-      setError("AI assistant unavailable.");
+      setError("AI assistant consultation offline.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col h-[500px]">
-      <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50 rounded-t-2xl">
+    <div className="bg-[#061813]/90 rounded-3xl border border-emerald-500/20 shadow-2xl backdrop-blur-xl flex flex-col h-[520px] overflow-hidden">
+      {/* Top Header */}
+      <div className="p-4 border-b border-emerald-900/40 flex items-center justify-between bg-[#04100d]/90">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-blue-600" />
-          <h3 className="font-semibold text-slate-900">Ask about this claim</h3>
+          <Terminal className="w-4 h-4 text-cyan-400" />
+          <h3 className="text-sm font-bold text-white font-display uppercase tracking-wider">
+            Evidence Inquest Chat
+          </h3>
         </div>
-        <span className="text-xs text-slate-500 italic">Answered from evidence only</span>
+        <span className="text-[10px] font-mono text-emerald-400/60 uppercase">Strictly Grounded</span>
       </div>
       
-      <div className="flex-1 p-4 overflow-y-auto flex flex-col gap-4">
+      {/* Messages Scroll View */}
+      <div className="flex-1 p-4 overflow-y-auto flex flex-col gap-3 font-sans">
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`px-4 py-2 rounded-2xl max-w-[85%] text-sm ${
-              msg.role === 'user' ? 'bg-blue-600 text-white rounded-br-sm' : 'bg-slate-100 text-slate-800 rounded-bl-sm'
+            <div className={`px-4 py-2.5 rounded-2xl max-w-[88%] text-xs sm:text-sm leading-relaxed ${
+              msg.role === 'user' 
+                ? 'bg-gradient-to-r from-emerald-600 to-cyan-500 text-black font-semibold rounded-br-none shadow-md shadow-cyan-950/50' 
+                : 'bg-[#030d09]/80 border border-emerald-900/40 text-emerald-100 rounded-bl-none'
             }`}>
               {msg.role === 'assistant' ? renderTextWithCitations(msg.content, msg.citations) : msg.content}
             </div>
@@ -124,28 +130,29 @@ export default function ClaimChat({ verificationId, verdict }) {
         ))}
         {loading && (
           <div className="flex justify-start">
-             <div className="px-4 py-3 rounded-2xl bg-slate-100 text-slate-500 rounded-bl-sm flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" /> <span className="text-xs">Thinking...</span>
+             <div className="px-4 py-2.5 rounded-2xl bg-[#030d09]/80 border border-emerald-900/40 text-cyan-300 rounded-bl-none flex items-center gap-2 text-xs font-mono">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> <span>Consulting evidence corpus...</span>
              </div>
           </div>
         )}
         {error && (
           <div className="flex justify-center">
-            <span className="text-xs text-red-500 bg-red-50 px-2 py-1 rounded flex items-center gap-1">
+            <span className="text-xs text-rose-400 bg-rose-950/60 border border-rose-900/50 px-3 py-1 rounded-full flex items-center gap-1.5 font-mono">
               <AlertCircle className="w-3 h-3"/> {error}
             </span>
           </div>
         )}
       </div>
 
-      <div className="p-4 border-t border-slate-100 bg-white rounded-b-2xl">
-        <div className="flex flex-wrap gap-2 mb-3">
+      {/* Suggested Inquiries & Input */}
+      <div className="p-3.5 border-t border-emerald-900/40 bg-[#04100d]/95">
+        <div className="flex flex-wrap gap-1.5 mb-2.5">
           {getSuggestedQuestions().map((q, i) => (
             <button 
               key={i}
               onClick={() => handleSend(null, q)}
               disabled={loading}
-              className="text-xs bg-slate-50 border border-slate-200 text-slate-600 hover:bg-blue-50 hover:text-blue-700 px-3 py-1.5 rounded-full transition-colors text-left disabled:opacity-50"
+              className="text-[11px] font-mono bg-[#061e17] border border-emerald-500/20 text-emerald-300 hover:border-cyan-400/50 hover:bg-[#0c2a21] hover:text-white px-2.5 py-1 rounded-lg transition-all text-left disabled:opacity-40 cursor-pointer"
             >
               {q}
             </button>
@@ -157,13 +164,13 @@ export default function ClaimChat({ verificationId, verdict }) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={loading}
-            placeholder="Ask a question..."
-            className="w-full bg-slate-50 border border-slate-200 rounded-full py-2.5 pl-4 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+            placeholder="Ask question regarding evidence papers..."
+            className="w-full bg-[#030d09] border border-emerald-500/20 rounded-xl py-2.5 pl-4 pr-11 text-xs sm:text-sm text-[#E6FFF8] placeholder:text-emerald-400/30 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/40 disabled:opacity-40"
           />
           <button 
             type="submit" 
             disabled={!input.trim() || loading}
-            className="absolute right-1.5 top-1.5 p-1.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="absolute right-1.5 top-1.5 p-2 bg-gradient-to-r from-emerald-500 to-cyan-400 text-black rounded-lg hover:brightness-110 active:scale-95 disabled:opacity-30 disabled:scale-100 transition-all cursor-pointer"
           >
             <Send className="w-3.5 h-3.5" />
           </button>

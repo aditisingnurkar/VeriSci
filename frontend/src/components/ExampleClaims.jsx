@@ -1,27 +1,36 @@
-import { Lightbulb } from 'lucide-react';
+import { Sparkles, ArrowUpRight } from 'lucide-react';
 
 const exampleClaims = [
-  "Mice lacking c-rel are protected against experimental autoimmune encephalomyelitis.",
-  "Vaccines cause infertility.",
-  "Vaccines do not cause infertility.",
-  "The moon is made of cheese and pasta."
+  { text: "Mice lacking c-rel are protected against experimental autoimmune encephalomyelitis.", category: "Genetics" },
+  { text: "Vaccines cause infertility.", category: "Immunology" },
+  { text: "Vaccines do not cause infertility.", category: "Clinical" },
+  { text: "Autophagy promotes cell survival in nutrient-deprived conditions.", category: "Cell Biology" }
 ];
 
 export default function ExampleClaims({ onSelect }) {
   return (
-    <div className="mt-8 max-w-3xl mx-auto">
-      <div className="flex items-center text-slate-500 mb-3 text-sm font-medium">
-        <Lightbulb className="w-4 h-4 mr-2" />
-        Try an example claim:
+    <div className="mt-8 max-w-3xl mx-auto w-full">
+      <div className="flex items-center gap-2 text-emerald-400/80 mb-3 text-xs font-mono uppercase tracking-wider">
+        <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+        <span>Sample Evaluation Benchmarks:</span>
       </div>
-      <div className="flex flex-wrap gap-2">
-        {exampleClaims.map((claim, idx) => (
+      
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        {exampleClaims.map((item, idx) => (
           <button
             key={idx}
-            onClick={() => onSelect(claim)}
-            className="text-left bg-white border border-slate-200 hover:border-blue-300 hover:bg-blue-50 text-slate-700 rounded-full px-4 py-2 text-sm transition-colors"
+            onClick={() => onSelect(item.text)}
+            className="group text-left bg-[#071d17]/80 hover:bg-[#0c2a21] border border-emerald-500/20 hover:border-cyan-400/50 text-emerald-100/90 rounded-xl p-3.5 text-xs sm:text-sm transition-all duration-200 flex items-start justify-between gap-2 cursor-pointer shadow-sm hover:shadow-cyan-900/20"
           >
-            {claim}
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-cyan-400/80 group-hover:text-cyan-300">
+                {item.category}
+              </span>
+              <span className="leading-snug font-sans text-emerald-50/90 group-hover:text-white line-clamp-2">
+                "{item.text}"
+              </span>
+            </div>
+            <ArrowUpRight className="w-4 h-4 text-emerald-500/50 group-hover:text-cyan-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0 mt-0.5" />
           </button>
         ))}
       </div>

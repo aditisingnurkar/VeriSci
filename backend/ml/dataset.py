@@ -77,6 +77,8 @@ def build_dataset(claims_path, corpus, include_hard_negatives=False):
             if include_hard_negatives:
                 retrieved = retrieve_evidence(claim, top_k=5, doc_threshold=0.01, sent_threshold=0.01)
                 for res in retrieved:
+                    if res.get("out_of_scope"):
+                        continue
                     doc_id = res['doc_id']
                     sent_idx = res['sentence_idx']
                     if (doc_id, sent_idx) not in gold_sentences:

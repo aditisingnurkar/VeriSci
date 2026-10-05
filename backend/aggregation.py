@@ -6,7 +6,10 @@ def aggregate_predictions(predictions):
     contradict_count = sum(1 for p in predictions if p['prediction'] == 'CONTRADICT')
     neutral_count = sum(1 for p in predictions if p['prediction'] == 'NEUTRAL')
     
-    unique_papers = len(set(p.get('doc_id', p.get('document_id')) for p in predictions))
+    unique_papers = len(set(
+        str(p.get('doc_id') or p.get('document_id') or p.get('source_id') or f"paper_{i}")
+        for i, p in enumerate(predictions)
+    )) if predictions else 0
     
     counts = {
         "support": support_count,
@@ -26,8 +29,8 @@ def aggregate_predictions(predictions):
         
     # Aggregate at document level (best evidence per paper)
     doc_scores = {}
-    for p in predictions:
-        doc_id = p.get('doc_id', p.get('document_id'))
+    for i, p in enumerate(predictions):
+        doc_id = str(p.get('doc_id') or p.get('document_id') or p.get('source_id') or f"paper_{i}")
         pred = p['prediction']
         # Weight each passage's vote by classifier_prob * relevance
         weight = p['confidence'] * p['relevance_score']

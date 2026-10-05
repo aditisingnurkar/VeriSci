@@ -18,17 +18,33 @@ def split_sentences(text):
     return [s.strip() for s in sentences if len(s.strip()) > 5]
 
 def extract_keywords(claim):
-    # Very basic extraction - remove common stopwords and punctuation
-    stopwords = {"a", "an", "the", "and", "or", "but", "is", "are", "was", "were", "in", "on", "at", "to", "for", "with", "by", "of", "this", "that", "it"}
+    stopwords = {
+        "a", "an", "the", "and", "or", "but", "is", "are", "was", "were", "in", "on", "at", "to", "for", 
+        "with", "by", "of", "this", "that", "it", "do", "does", "did", "not", "no", "cause", "causes", 
+        "causing", "caused", "lead", "leads", "have", "has", "had", "can", "could", "may", "might", "will"
+    }
     words = re.findall(r'\b[a-zA-Z0-9-]+\b', claim.lower())
     keywords = [w for w in words if w not in stopwords]
-    return " ".join(keywords)
+    
+    expanded = []
+    for w in keywords:
+        if w in ["infertility", "infertile"]:
+            expanded.append("(infertility OR fertility)")
+        elif w in ["vaccine", "vaccines", "vaccination", "immunisation", "immunization"]:
+            expanded.append("(vaccine OR vaccination)")
+        elif w in ["autism", "autistic"]:
+            expanded.append("(autism OR ASD)")
+        else:
+            expanded.append(w)
+            
+    return " AND ".join(expanded) if expanded else claim
 
 def search_pubmed(query, top_k=20):
     url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
     params = {
         "db": "pubmed",
         "term": query,
+        "sort": "relevance",
         "retmode": "json",
         "retmax": top_k,
         "tool": "VeriSci",
@@ -94,8 +110,8 @@ def retrieve_from_pubmed(claim, top_k=20):
         return CACHE[cache_key]
         
     try:
-        # Check if enabled
-        if os.environ.get("ENABLE_PUBMED", "false").lower() != "true":
+        # Check if enabled (default to true)
+        if os.environ.get("ENABLE_PUBMED", "true").lower() == "false":
             return []
             
         query = extract_keywords(claim)
