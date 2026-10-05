@@ -1,58 +1,58 @@
 import { Link } from 'react-router-dom';
-import { Microscope, Activity, Sparkles, BookOpen } from 'lucide-react';
+import { Microscope, BookOpen, Sparkles, ShieldCheck } from 'lucide-react';
 
 export default function Navbar() {
   return (
-    <header className="sticky top-0 z-50 bg-[#051410]/80 backdrop-blur-xl border-b border-[#00F5D4]/15">
+    <header className="sticky top-0 z-50 bg-[#070d13]/85 backdrop-blur-xl border-b border-slate-800/60 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           
           {/* Logo & Brand */}
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00F5D4]/20 to-[#10B981]/10 border border-[#00F5D4]/40 flex items-center justify-center shadow-[0_0_15px_-3px_rgba(0,245,212,0.3)] group-hover:border-[#00F5D4] group-hover:shadow-[0_0_20px_0_rgba(0,245,212,0.5)] transition-all duration-300">
-              <Microscope className="h-5 w-5 text-[#00F5D4]" />
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-teal-500/20 to-emerald-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400 group-hover:border-teal-400/60 group-hover:text-teal-300 transition-all duration-300 shadow-inner">
+              <Microscope className="h-4 w-4" />
             </div>
             <div className="flex flex-col">
-              <div className="flex items-center gap-1.5">
-                <span className="font-display font-bold text-xl tracking-tight text-white group-hover:text-[#00F5D4] transition-colors">
-                  Veri<span className="text-[#00F5D4]">Sci</span>
+              <div className="flex items-center gap-2">
+                <span className="font-display font-bold text-lg tracking-tight text-white group-hover:text-teal-300 transition-colors">
+                  Veri<span className="text-teal-400">Sci</span>
                 </span>
-                <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-[#00F5D4]/10 text-[#00F5D4] border border-[#00F5D4]/30 font-semibold">
-                  v2.0
+                <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700/60">
+                  Research Edition
                 </span>
               </div>
-              <span className="text-[10px] font-mono text-[#809D94] uppercase tracking-widest hidden sm:block">
-                Evidence Intelligence Engine
+              <span className="text-[10px] font-mono text-slate-400 tracking-wider hidden sm:block">
+                Biomedical Evidence Verification System
               </span>
             </div>
           </Link>
 
           {/* Center / Right Meta */}
-          <div className="flex items-center gap-6">
-            {/* Live Engine Indicator */}
-            <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-[#0B251E] border border-[#00F5D4]/20 text-xs font-mono text-[#809D94]">
-              <span className="w-2 h-2 rounded-full bg-[#00F5D4] animate-pulse"></span>
-              <span className="text-[#E6FFF8]">SciFact</span>
-              <span className="text-[#809D94]">+</span>
-              <span className="text-[#00F5D4] font-semibold">PubMed Live</span>
+          <div className="flex items-center gap-4 sm:gap-6">
+            {/* Live Data Badge */}
+            <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/90 border border-slate-800 text-xs font-mono text-slate-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse"></span>
+              <span className="text-slate-200">SciFact</span>
+              <span className="text-slate-600">/</span>
+              <span className="text-teal-300 font-medium">PubMed Live</span>
             </div>
 
             {/* Navigation Links */}
-            <nav className="flex items-center space-x-1 sm:space-x-3 text-sm font-medium">
+            <nav className="flex items-center space-x-1 sm:space-x-2 text-sm">
               <Link 
                 to="/" 
-                className="px-3 py-1.5 rounded-lg text-[#E6FFF8] hover:text-[#00F5D4] hover:bg-[#0C2D24] transition-all font-mono text-xs uppercase tracking-wider"
+                className="px-3 py-1.5 rounded-lg text-slate-200 hover:text-white hover:bg-slate-800/70 transition-all font-sans text-xs font-semibold"
               >
-                Verifier
+                Verification Desk
               </Link>
               <a 
                 href="https://github.com/allenai/scifact" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="px-3 py-1.5 rounded-lg text-[#809D94] hover:text-[#00F5D4] hover:bg-[#0C2D24] transition-all font-mono text-xs uppercase tracking-wider hidden sm:flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/70 transition-all font-sans text-xs flex items-center gap-1.5"
               >
-                <BookOpen className="w-3.5 h-3.5 text-[#00F5D4]" />
-                Corpus Docs
+                <BookOpen className="w-3.5 h-3.5 text-teal-400" />
+                <span className="hidden sm:inline">Corpus</span> Docs
               </a>
             </nav>
           </div>
@@ -62,3 +62,4 @@ export default function Navbar() {
     </header>
   );
 }
+

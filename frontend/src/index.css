@@ -3,22 +3,23 @@
 @layer base {
   :root {
     --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --font-display: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif;
+    --font-serif: 'Newsreader', Georgia, Cambria, 'Times New Roman', serif;
+    --font-display: 'Plus Jakarta Sans', sans-serif;
     --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
   }
 
   body {
     font-family: var(--font-sans);
-    background-color: #040E0B;
-    color: #E2FAF4;
+    background-color: #060a0e;
+    color: #edf2f7;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     overflow-x: hidden;
     background-image: 
-      radial-gradient(at 0% 0%, rgba(0, 245, 212, 0.07) 0px, transparent 50%),
-      radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.05) 0px, transparent 50%),
-      radial-gradient(at 50% 100%, rgba(6, 78, 59, 0.15) 0px, transparent 60%);
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(20, 184, 166, 0.12), transparent 70%),
+      radial-gradient(ellipse 60% 40% at 90% 20%, rgba(14, 165, 233, 0.08), transparent 60%),
+      linear-gradient(180deg, #070c10 0%, #05080b 100%);
     background-attachment: fixed;
   }
 
@@ -26,6 +27,11 @@
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    position: relative;
+  }
+
+  .font-serif, .font-editorial {
+    font-family: var(--font-serif);
   }
 
   h1, h2, h3, h4, .font-display {
@@ -36,82 +42,90 @@
     font-family: var(--font-mono);
   }
 
-  /* Custom Neon Scrollbar */
+  /* Refined, Subtle Scrollbar */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #061713;
+    background: #070b0f;
   }
   ::-webkit-scrollbar-thumb {
-    background: #123D32;
+    background: #1e293b;
     border-radius: 9999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #00F5D4;
+    background: #334155;
   }
 }
 
-/* Cyber Laboratory & HUD Effects */
-.tech-card {
-  background: linear-gradient(135deg, rgba(12, 36, 29, 0.85) 0%, rgba(6, 20, 16, 0.95) 100%);
-  border: 1px solid rgba(0, 245, 212, 0.15);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4), inset 0 1px 0 0 rgba(0, 245, 212, 0.1);
-  backdrop-filter: blur(12px);
-}
-
-.tech-card:hover {
-  border-color: rgba(0, 245, 212, 0.35);
-  box-shadow: 0 12px 40px 0 rgba(0, 245, 212, 0.08), inset 0 1px 0 0 rgba(0, 245, 212, 0.2);
-}
-
-.tech-border-glow {
-  position: relative;
-}
-.tech-border-glow::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(to bottom right, rgba(0, 245, 212, 0.4), rgba(16, 185, 129, 0.1), transparent);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
+/* Atmospheric Scientific Canvas with Seamless Blend */
+.bg-canvas-container {
+  position: fixed;
+  inset: 0;
   pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
 }
 
-.glow-aqua {
-  box-shadow: 0 0 25px -5px rgba(0, 245, 212, 0.35);
+.bg-canvas-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.18;
+  filter: contrast(1.15) brightness(0.9) saturate(1.1);
+  mix-blend-mode: luminosity;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 20%, transparent 85%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 20%, transparent 85%);
 }
 
-.glow-emerald {
-  box-shadow: 0 0 30px -5px rgba(16, 185, 129, 0.4);
+.bg-canvas-gradient {
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(circle at 50% 15%, rgba(20, 184, 166, 0.09) 0%, transparent 50%),
+    radial-gradient(circle at 80% 40%, rgba(56, 189, 248, 0.05) 0%, transparent 45%),
+    linear-gradient(to bottom, rgba(6, 10, 14, 0.6) 0%, rgba(6, 10, 14, 0.85) 60%, #05080b 100%);
 }
 
-.glow-crimson {
-  box-shadow: 0 0 30px -5px rgba(244, 63, 94, 0.4);
+/* Editorial Science Cards */
+.science-card {
+  background: rgba(11, 18, 26, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    0 4px 20px -2px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.glow-amber {
-  box-shadow: 0 0 30px -5px rgba(245, 158, 11, 0.4);
+.science-card:hover {
+  border-color: rgba(20, 184, 166, 0.3);
+  box-shadow: 
+    0 12px 30px -4px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(20, 184, 166, 0.15),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
 }
 
-/* Grid Matrix Background Pattern */
-.bg-grid-pattern {
-  background-size: 32px 32px;
-  background-image: 
-    linear-gradient(to right, rgba(0, 245, 212, 0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 245, 212, 0.04) 1px, transparent 1px);
+/* Dot matrix texture overlay */
+.bg-subtle-dots {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
-/* Pulse Glow Animation */
-@keyframes pulseGlow {
-  0%, 100% { opacity: 0.4; transform: scale(1); }
-  50% { opacity: 0.8; transform: scale(1.03); }
+/* Subtle glow effects */
+.glow-emerald-soft {
+  box-shadow: 0 0 25px -4px rgba(16, 185, 129, 0.22);
 }
 
-.animate-pulse-glow {
-  animation: pulseGlow 4s ease-in-out infinite;
+.glow-rose-soft {
+  box-shadow: 0 0 25px -4px rgba(244, 63, 94, 0.22);
 }
+
+.glow-amber-soft {
+  box-shadow: 0 0 25px -4px rgba(245, 158, 11, 0.22);
+}
+
