@@ -1,6 +1,8 @@
 import { useLocation, Navigate, Link } from 'react-router-dom';
 import EvidenceCard from '../components/EvidenceCard';
 import VerdictCard from '../components/VerdictCard';
+import ExplanationCard from '../components/ExplanationCard';
+import ClaimChat from '../components/ClaimChat';
 import { ArrowLeft, FileText, CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react';
 
 export default function Results() {
@@ -11,7 +13,7 @@ export default function Results() {
     return <Navigate to="/" replace />;
   }
 
-  const { claim, verdict, strength, reason, counts, evidence, model } = data;
+  const { claim, verdict, strength, reason, counts, evidence, model, verification_id, sources_used } = data;
 
   return (
     <main className="flex-grow bg-slate-50/50 py-8 px-4 sm:px-6 lg:px-8">
@@ -30,6 +32,14 @@ export default function Results() {
             reason={reason} 
           />
         </div>
+
+        {/* AI Explanation and Chat */}
+        {verification_id && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <ExplanationCard verificationId={verification_id} />
+            <ClaimChat verificationId={verification_id} verdict={verdict} />
+          </div>
+        )}
 
         {/* Evidence Breakdown */}
         {counts?.papers > 0 && (
@@ -74,7 +84,7 @@ export default function Results() {
         </section>
 
         <section className="text-xs text-slate-400 text-center pt-8 border-t border-slate-200">
-          <p>This verification was generated automatically by {model?.classifier} (via {model?.retriever}). It is based only on the SciFact corpus and is not medical or professional advice.</p>
+          <p>This verification was generated automatically by {model?.classifier} (via {model?.retriever}). It is based only on {sources_used ? sources_used.join(" and ") : "the SciFact corpus"} and is not medical or professional advice.</p>
         </section>
 
       </div>

@@ -2,31 +2,38 @@ import { cn } from '../lib/utils';
 import { ExternalLink, Database, Network } from 'lucide-react';
 
 export default function EvidenceCard({ evidence, index }) {
-  const { title, evidence_text, prediction, confidence, relevance_score, source } = evidence;
+  const { title, evidence_text, context_before, context_after, prediction, confidence, relevance_score, source, url, evidence_id } = evidence;
 
   const isSupport = prediction === 'SUPPORT';
   const isContradict = prediction === 'CONTRADICT';
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col sm:flex-row">
+    <div id={`evidence-${evidence_id}`} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col sm:flex-row transition-colors duration-500">
       
       {/* Evidence Source & Content */}
       <div className="p-6 sm:w-2/3 border-b sm:border-b-0 sm:border-r border-slate-100 flex flex-col justify-between">
         <div>
-          <div className="flex items-center gap-3 mb-3">
+          <div className="flex flex-wrap items-center gap-3 mb-3">
             <span className="text-xs font-mono font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded">
-              #{index < 10 ? `0${index}` : index}
+              {evidence_id ? `[${evidence_id}]` : `#${index < 10 ? `0${index}` : index}`}
             </span>
             <div className="flex items-center text-xs text-slate-500 font-medium truncate">
               <Database className="w-3 h-3 mr-1 shrink-0" />
               <span className="truncate">{source || "SciFact"}</span>
             </div>
+            {url && (
+              <a href={url} target="_blank" rel="noopener noreferrer" className="flex items-center text-xs text-blue-600 hover:text-blue-800 font-medium ml-auto">
+                View Source <ExternalLink className="w-3 h-3 ml-1" />
+              </a>
+            )}
           </div>
           
           <h4 className="font-semibold text-slate-900 leading-snug mb-4">{title}</h4>
           
           <div className="bg-slate-50 border-l-4 border-slate-300 p-4 rounded-r-xl text-sm text-slate-700 italic mb-4">
-            "{evidence_text}"
+            {context_before && <span className="text-slate-400 mr-1">{context_before}</span>}
+            <span className="font-medium text-slate-900">{evidence_text}</span>
+            {context_after && <span className="text-slate-400 ml-1">{context_after}</span>}
           </div>
         </div>
         

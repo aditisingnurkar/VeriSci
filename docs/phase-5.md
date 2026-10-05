@@ -1,33 +1,27 @@
-# Phase 5: End-to-End Evaluation & Final UI
+# Phase 5: RAG Explanation & Claim Chat
 
-## Final System Metrics
-We evaluated the full end-to-end pipeline (Document + Sentence Retrieval -> Claim Verification ML -> Verdict Aggregation) on the SciFact dev claims dataset (`data/claims_dev.jsonl`).
+## Overview
+Phase 5 introduces a **Retrieval-Augmented Generation (RAG)** layer strictly designed to *explain* the verification results. 
+**Crucial Architecture Distinction**: The LLM does *not* participate in retrieving evidence, and it does *not* make or alter the classification verdict. The ML/Aggregation layer completely dictates the verdict. The LLM only surfaces insights from the retrieved passages in a conversational manner.
 
-**End-to-End Evaluation Results (SciFact Dev):**
-- **Macro-F1 Score**: 0.31
-- **Accuracy**: 0.45
+## Implementation Details
+- **Context Construction**: A dedicated endpoint `/api/verify` produces a verification object, which is cached via an in-memory TTL store (1 hour lifetime) using a generated UUID (`verification_id`).
+- **Explanation Module**: When the UI mounts, `/api/explain` is called with the `verification_id`. The server rebuilds a grounding context comprising the system's verdict and the top 10 most relevant evidence passages. The LLM then generates a 4-6 sentence plain language explanation of *why* the ML classification occurred.
+- **Chat Interface**: Users can query the evidence directly via `/api/chat`. The chat module maintains up to 6 turns of history. 
+- **Citations**: Both explanation and chat endpoints generate `[E#]` citation tokens. The frontend maps these tokens to clickable anchors, automatically scrolling the user to the precise `EvidenceCard` that generated the claim.
 
-*Confusion Matrix:*
-```text
-['CONTRADICTED', 'INSUFFICIENT', 'MIXED', 'SUPPORTED']
-[[13 22  1 28]
- [10 80  1 21]
- [ 0  0  0  0]
- [26 52  3 43]]
-```
+## Grounding Strategy & Validators
+To ensure maximum safety in a health/biomedical context, we deployed strict server-side validators:
+1. **Citation Verification**: Any `[E#]` citation hallucinated by the model that does not correspond to an actual retrieved passage is immediately stripped.
+2. **Fact/Quote Cross-Checking**: The validator ensures that quantitative figures (e.g., percentages, raw numbers) output by the model literally exist within the provided context text.
+3. **Verdict Consistency**: The validator blocks the LLM from outputting statements that flagrantly contradict the ML system's computed verdict.
+4. **Fallback Scenarios**: If the LLM generates ungrounded data twice, or if the API key is missing/timeouts, the system gracefully degrades, providing a templated textual summary (e.g., "Analyzed 10 passages from 3 studies...").
 
-## Model Selection (Baseline vs. Transformer)
-We tested a linear SVM trained on TF-IDF + overlap + negation features (with hard-negative mining) against a zero-shot NLI transformer (`cross-encoder/nli-distilroberta-base`).
+## Tech Stack & Configuration
+- **Model**: Default `gemini-2.5-flash` using `generativelanguage.googleapis.com`.
+- **Environment**: Configured via `LLM_PROVIDER`, `GEMINI_API_KEY`, or `LLM_API_KEY`.
+- **Frontend**: Integrated via `ClaimChat.jsx` and `ExplanationCard.jsx`.
 
-**Result:** The **Baseline Linear SVM** won.
-- **Baseline Evidence Classifier Macro-F1**: 0.4167
-- **Transformer Evidence Classifier Macro-F1**: 0.3654
-
-The transformer struggled heavily with the SciFact domain (e.g., failing to recognize scientific entailment vs contradiction correctly without fine-tuning), whereas our baseline explicitly used overlap and negation heuristics that proved more robust on this specific validation set. We shipped the baseline.
-
-## Final UI State
-The frontend was completely overhauled to surface the verdict first and clearly present the supporting data.
-- **Hero Verdict Block**: A large, color-coded block (Green for Supported, Red for Contradicted, Amber for Mixed/Insufficient) presenting the final plain-language verdict and strength.
-- **Evidence Breakdown**: A clear count of how many papers/passages were analyzed and their respective ML assessments (Support/Contradict/Neutral).
-- **Evidence Cards**: Clean, modern cards that show the paper title, the specific extracted snippet, the relevance score, and the localized ML assessment for that specific piece of evidence.
-- **Mock Data Removed**: The application now exclusively uses live data from the FastAPI backend.
+## Weaknesses
+- Complex logic constraints require strong prompt following; weaker models might fail the strict number/verdict validation and repeatedly trigger the fallback template.
+- Chat history is hard-capped to 6 turns to avoid context overflow, limiting deep interrogations.
