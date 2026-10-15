@@ -1,10 +1,10 @@
 import { BookOpen, ArrowUpRight } from 'lucide-react';
 
 const exampleClaims = [
-  { text: "Mice lacking c-rel are protected against experimental autoimmune encephalomyelitis.", category: "Genetics & Neuroimmunology", source: "SciFact Benchmark" },
+  { text: "Bariatric surgery results in significant weight loss in obese patients.", category: "Clinical Surgery & Obesity", source: "PubMed Direct" },
   { text: "Vaccines cause infertility.", category: "Public Health / Clinical", source: "PubMed Direct" },
-  { text: "Autophagy promotes cell survival in nutrient-deprived conditions.", category: "Cellular Biology", source: "SciFact Benchmark" },
-  { text: "Regular vitamin C supplementation reduces the duration of common cold episodes.", category: "Meta-Analysis / Nutrition", source: "Cochrane Review" }
+  { text: "Microglia do not play a role in the clearance of amyloid-beta.", category: "Neurobiology / Alzheimer's", source: "SciFact Benchmark" },
+  { text: "High levels of CRP lead to a higher risk of exacerbations in COPD.", category: "Clinical Biomarkers", source: "SciFact Benchmark" }
 ];
 
 export default function ExampleClaims({ onSelect }) {
