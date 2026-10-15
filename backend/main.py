@@ -49,11 +49,11 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="VeriSci Backend", lifespan=lifespan)
 
-# Allow frontend requests
-FRONTEND_URL = os.getenv("VITE_API_URL", "http://localhost:5173")
+# Allow frontend requests from any local/dev origin
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_URL, "http://127.0.0.1:5173"],
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -193,8 +193,10 @@ def verify(req: ClaimRequest):
     except FileNotFoundError as e:
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         logging.error(f"Verify error: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/classify")
 def classify_endpoint(req: ClassifyRequest):

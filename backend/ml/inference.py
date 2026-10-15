@@ -53,8 +53,13 @@ class EvidenceClassifier:
         evidences = np.array(evidence_texts)
         X = self.extractor.transform(claims, evidences)
         svm_preds = self.model.predict(X)
-        svm_probs = self.model.predict_proba(X)
-        svm_classes = list(self.model.classes_)
+        try:
+            svm_probs = self.model.predict_proba(X)
+        except Exception:
+            # Fallback to uniform probabilities if predict_proba raises an attribute error
+            n_classes = len(self.model.classes_) if hasattr(self.model, 'classes_') else 3
+            svm_probs = np.full((len(evidence_texts), n_classes), 1.0 / n_classes)
+        svm_classes = list(self.model.classes_) if hasattr(self.model, 'classes_') else ["SUPPORT", "CONTRADICT", "NEUTRAL"]
         
         # 2. Transformer NLI prediction
         nli_results = []
