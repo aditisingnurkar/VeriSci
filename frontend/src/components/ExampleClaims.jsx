@@ -1,10 +1,12 @@
 import { BookOpen, ArrowUpRight } from 'lucide-react';
 
 const exampleClaims = [
-  { text: "Bariatric surgery results in significant weight loss in obese patients.", category: "Clinical Surgery & Obesity", source: "PubMed Direct" },
-  { text: "Vaccines cause infertility.", category: "Public Health / Clinical", source: "PubMed Direct" },
-  { text: "Microglia do not play a role in the clearance of amyloid-beta.", category: "Neurobiology / Alzheimer's", source: "SciFact Benchmark" },
-  { text: "High levels of CRP lead to a higher risk of exacerbations in COPD.", category: "Clinical Biomarkers", source: "SciFact Benchmark" }
+  { text: "Bariatric surgery results in significant weight loss in obese patients.", category: "Clinical Surgery", verdict: "Supported" },
+  { text: "Statins reduce LDL cholesterol levels in patients with hypercholesterolemia.", category: "Pharmacology", verdict: "Supported" },
+  { text: "Vaccines cause infertility.", category: "Public Health", verdict: "Contradicted" },
+  { text: "Microglia do not play a role in the clearance of amyloid-beta.", category: "Neurobiology", verdict: "Contradicted" },
+  { text: "High levels of CRP lead to a higher risk of exacerbations in COPD.", category: "Biomarker / Observational", verdict: "Inconclusive" },
+  { text: "The moon is made of cheddar cheese and pasta.", category: "Domain Filter", verdict: "Out-of-Scope" }
 ];
 
 export default function ExampleClaims({ onSelect }) {
@@ -31,7 +33,7 @@ export default function ExampleClaims({ onSelect }) {
                   {item.category}
                 </span>
                 <span className="text-[9px] font-mono text-slate-400">
-                  • {item.source}
+                  • Expected: {item.verdict}
                 </span>
               </div>
               <span className="text-xs sm:text-[13px] leading-relaxed font-serif text-slate-200 group-hover:text-white line-clamp-2">

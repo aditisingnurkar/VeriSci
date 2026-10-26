@@ -4,7 +4,7 @@ import EvidenceCard from '../components/EvidenceCard';
 import VerdictCard from '../components/VerdictCard';
 import ExplanationCard from '../components/ExplanationCard';
 import ClaimChat from '../components/ClaimChat';
-import { ArrowLeft, FileText, CheckCircle2, XCircle, MinusCircle, Layers, Cpu, Database, Filter } from 'lucide-react';
+import { ArrowLeft, FileText, CheckCircle2, XCircle, MinusCircle, Layers, Cpu, Database, Filter, Sparkles } from 'lucide-react';
 
 export default function Results() {
   const location = useLocation();
@@ -45,6 +45,24 @@ export default function Results() {
             strength={strength} 
             reason={reason} 
           />
+
+          {data.spelling_suggestion?.has_suggestion && (
+            <div className="mt-3 inline-flex flex-wrap items-center gap-2 px-3.5 py-2 rounded-xl bg-teal-950/50 border border-teal-500/30 text-xs text-teal-200 shadow-sm">
+              <Sparkles className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+              {data.spelling_suggestion.applied_to_retrieval ? (
+                <span>
+                  Query corrected for medical accuracy: evaluated evidence for{" "}
+                  <strong className="text-white font-medium">"{data.spelling_suggestion.suggested_claim}"</strong>
+                  <span className="text-slate-400 ml-1.5">(original: "{claim}")</span>
+                </span>
+              ) : (
+                <span>
+                  Suggested scientific spelling:{" "}
+                  <strong className="text-white font-medium">"{data.spelling_suggestion.suggested_claim}"</strong>
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* AI Explanation and Neural Chat */}

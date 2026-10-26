@@ -94,6 +94,16 @@ def build_dataset(claims_path, corpus, include_hard_negatives=False):
 
 def get_train_dev_data(data_dir):
     random.seed(42)
+    cached_train = os.path.join(data_dir, 'processed', 'scifact_train.csv')
+    cached_dev = os.path.join(data_dir, 'processed', 'scifact_dev.csv')
+    
+    if os.path.exists(cached_train) and os.path.exists(cached_dev):
+        train_df = pd.read_csv(cached_train)
+        dev_df = pd.read_csv(cached_dev)
+        train_df = train_df.rename(columns={'claim_text': 'claim', 'normalized_label': 'label'})
+        dev_df = dev_df.rename(columns={'claim_text': 'claim', 'normalized_label': 'label'})
+        return train_df, dev_df
+        
     corpus_path = os.path.join(data_dir, 'corpus.jsonl')
     train_path = os.path.join(data_dir, 'claims_train.jsonl')
     dev_path = os.path.join(data_dir, 'claims_dev.jsonl')
@@ -103,3 +113,14 @@ def get_train_dev_data(data_dir):
     dev_df = build_dataset(dev_path, corpus, include_hard_negatives=True)
     
     return train_df, dev_df
+
+def get_three_dataset_data(data_dir):
+    """Loads unified SciFact + HealthVer + ManConCorpus train and dev data."""
+    from ml.unified_pipeline import UnifiedDatasetPipeline
+    pipeline = UnifiedDatasetPipeline(data_dir=data_dir)
+    train_df = pipeline.get_unified_dataset(['train'], ['scifact', 'healthver', 'mancon'])
+    dev_df = pipeline.get_unified_dataset(['dev'], ['scifact', 'healthver', 'mancon'])
+    train_df = train_df.rename(columns={'claim_text': 'claim', 'normalized_label': 'label'})
+    dev_df = dev_df.rename(columns={'claim_text': 'claim', 'normalized_label': 'label'})
+    return train_df, dev_df
+

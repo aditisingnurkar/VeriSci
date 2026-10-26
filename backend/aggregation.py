@@ -72,16 +72,29 @@ def aggregate_predictions(predictions):
             
         score = float(max(total_support_weight, total_contradict_weight))
         
-    # Strength logic
-    if verdict in ["SUPPORTED", "CONTRADICTED"]:
-        if unique_papers >= 3 and score > 0.1:
+    # Strength logic based on corroborating non-neutral papers
+    supporting_papers = sum(1 for scores in doc_scores.values() if scores["SUPPORT"] > 0)
+    contradicting_papers = sum(1 for scores in doc_scores.values() if scores["CONTRADICT"] > 0)
+    
+    if verdict == "SUPPORTED":
+        corroborating_papers = supporting_papers
+        if corroborating_papers >= 3 and score > 0.1:
             strength = "STRONG"
-        elif unique_papers >= 2 and score > 0.05:
+        elif corroborating_papers >= 2 and score > 0.05:
+            strength = "MODERATE"
+        else:
+            strength = "WEAK"
+    elif verdict == "CONTRADICTED":
+        corroborating_papers = contradicting_papers
+        if corroborating_papers >= 3 and score > 0.1:
+            strength = "STRONG"
+        elif corroborating_papers >= 2 and score > 0.05:
             strength = "MODERATE"
         else:
             strength = "WEAK"
     elif verdict == "MIXED":
-        if unique_papers >= 4:
+        active_papers = supporting_papers + contradicting_papers
+        if active_papers >= 4:
             strength = "STRONG"
         else:
             strength = "MODERATE"

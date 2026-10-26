@@ -6,9 +6,10 @@
 [![Vite](https://img.shields.io/badge/Vite-8.3+-646CFF?style=flat&logo=vite&logoColor=white)](https://vitejs.dev)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC?style=flat&logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
 [![Google Gemini](https://img.shields.io/badge/Google_Gemini-Interactions_API-4285F4?style=flat&logo=google&logoColor=white)](https://ai.google.dev)
-[![Tests](https://img.shields.io/badge/Tests-15%2F15_Passing-success?style=flat&logo=pytest&logoColor=white)](https://pytest.org)
+[![Tests](https://img.shields.io/badge/Tests-36%2F36_Passing-success?style=flat&logo=pytest&logoColor=white)](https://pytest.org)
+[![ML Datasets](https://img.shields.io/badge/ML_Datasets-SciFact%20%2B%20HealthVer%20%2B%20ManConCorpus-8A2BE2?style=flat)](docs/phase-6-three-dataset-integration.md)
 
-> **VeriSci** is an end-to-end scientific truth verification engine designed to cross-reference biomedical and health claims against peer-reviewed scientific literature. By combining **dual-stage corpus retrieval (SciFact + Live PubMed)**, **Transformer-based Natural Language Inference (NLI)**, and **grounded generative AI synthesis via Google Gemini**, VeriSci produces calibrated verdicts (`SUPPORTED`, `CONTRADICTED`, `MIXED`, `INSUFFICIENT`) with exact citations and interactive inquest capabilities.
+> **VeriSci** is an end-to-end scientific truth verification engine designed to cross-reference biomedical and health claims against peer-reviewed scientific literature. By combining **dual-stage corpus retrieval (SciFact + Live PubMed)**, **a three-dataset trained stance classifier (SciFact + HealthVer + ManConCorpus)**, **Transformer-based Natural Language Inference (NLI)**, and **grounded generative AI synthesis via Google Gemini**, VeriSci produces calibrated verdicts (`SUPPORTED`, `CONTRADICTED`, `MIXED`, `INSUFFICIENT`) with exact citations and interactive inquest capabilities.
 
 ---
 
@@ -95,11 +96,15 @@ VeriSci/
 ├── backend/
 │   ├── aggregation.py             # Verdict & confidence score aggregator
 │   ├── config.py                  # Environment & model settings
+│   ├── data_acquisition.py        # Automated downloader for HealthVer & ManConCorpus
 │   ├── main.py                    # FastAPI server & route handlers
 │   ├── requirements.txt           # Python dependencies
 │   ├── ml/
+│   │   ├── dataset.py             # Three-dataset loader & SciFact fallback
+│   │   ├── unified_pipeline.py    # Schema normalization, deduplication & splitting
+│   │   ├── run_experiments.py     # Experiments A, B, C empirical evaluation suite
 │   │   ├── inference.py           # NLI classification inference pipeline
-│   │   └── train.py               # Model training & weights
+│   │   └── train.py               # Classical ML model training (--scifact-only flag)
 │   ├── rag/
 │   │   ├── context.py             # Context assembler for LLM prompts
 │   │   ├── llm.py                 # Gemini client with multi-model fallback
@@ -113,7 +118,8 @@ VeriSci/
 │   └── tests/
 │       ├── test_aggregation.py    # Aggregation logic test suite
 │       ├── test_api.py            # FastAPI endpoint tests
-│       └── test_rag.py            # RAG validators & synthesis tests
+│       ├── test_rag.py            # RAG validators & synthesis tests
+│       └── test_three_datasets.py # 3-Dataset schema, normalization, leakage & reloading tests
 ├── frontend/
 │   ├── public/
 │   │   └── scientific_bg.jpg      # High-res cellular microscopy asset
@@ -312,10 +318,61 @@ Run the automated backend test suite:
 pytest backend/tests -v
 ```
 
+## Three-Dataset ML Evidence Stance Integration (Phase 6)
+
+VeriSci integrates three authoritative biomedical verification datasets into a unified evidence stance classification pipeline:
+
+1. **SciFact** ([Allen Institute for AI, EMNLP 2020](https://github.com/allenai/scifact)): 5,183 scientific papers and annotated claim-evidence pairs.
+2. **HealthVer** ([Sarrouti et al., NAACL-HLT 2021](https://github.com/sarrouti/HealthVer)): Health-related claims searched against PubMed and Common Crawl with multi-annotator stance labels.
+3. **ManConCorpus** ([Alamri & Stevenson, BMC Med Inform Decis Mak 2016 / PMC10919922](http://staffwww.dcs.shef.ac.uk/people/M.Stevenson/resources/bio_contradictions/)): Manually annotated scientific sentence pairs from clinical trial abstracts.
+
+### Empirical Evaluation: Baseline vs. Three-Dataset Model
+
+Evaluated on held-out test splits with exact cross-split leakage prevention (0 duplicate claim-evidence pairs between train and dev):
+
+#### Table 1: Combined Held-Out Dev Set ($N = 4,599$ across SciFact, HealthVer, ManConCorpus)
+
+| Metric | SciFact Baseline | Three-Dataset Model | Absolute Difference |
+|---|---|---|---|
+| **Accuracy** | 61.99% | **73.26%** | **+11.27 pp** |
+| **Macro F1** | 35.29% | **56.42%** | **+21.13 pp** |
+| **Weighted F1** | 56.02% | **71.07%** | **+15.06 pp** |
+| **SUPPORT F1** | 15.79% | **44.97%** | **+29.18 pp** |
+| **CONTRADICT F1** | 12.16% | **38.01%** | **+25.85 pp** |
+| **NEUTRAL F1** | 77.91% | **86.27%** | **+8.36 pp** |
+
+#### Table 2: Canonical SciFact Held-Out Dev Set ($N = 2,294$)
+
+| Metric | SciFact Baseline | Three-Dataset Model | Absolute Difference |
+|---|---|---|---|
+| **Accuracy** | 77.46% | **84.66%** | **+7.20 pp** |
+| **Weighted F1** | 78.91% | **80.77%** | **+1.86 pp** |
+| **Macro F1** | 41.52% | 35.97% | -5.55 pp |
+
+*Trade-off analysis*: The SciFact-only baseline frequently over-predicted `CONTRADICT` / `SUPPORT` on neutral hard negatives (precision 10.5% and 19.7%), depressing SciFact accuracy to 77.46%. The three-dataset model learned strict evidence boundaries from HealthVer and ManConCorpus, suppressing false-positive claims and raising SciFact accuracy to 84.66% while delivering a +21.13 pp Macro F1 boost across broader biomedical literature.
+
+For complete documentation, data schemas, and ablation analyses, see [docs/phase-6-three-dataset-integration.md](docs/phase-6-three-dataset-integration.md).
+
+---
+
+## Testing & Quality Assurance
+
+Run the automated backend test suite (36 tests):
+```bash
+pytest backend/tests -v
+```
+
 **Test Coverage Summary:**
+- `test_negation_nli.py`: Positive vs. negated claims against identical evidence, NLI input ordering (premise=evidence, hypothesis=claim), dynamic label mapping, absence of evidence vs. evidence of absence, directional distinctions (increase vs. decrease), biomedical spelling correction & protected terms, and corroborating paper aggregation.
+- `test_three_datasets.py`: Schema validation, 3-way label normalization, train/dev split isolation, cross-dataset leakage prevention, model serialization, backward compatibility, and live API endpoints.
 - `test_aggregation.py`: Stance distribution weighting, empty edge cases, and mixed confidence scenarios.
-- `test_api.py`: Health checks, live query retrieval, out-of-scope claim detection, verify pipeline, and classify routes.
+- `test_api.py`: Health checks, live query retrieval, out-of-scope claim detection, verify pipeline, classify routes, and spellcheck endpoint.
 - `test_rag.py`: Citation parsing, numerical fabrication checks, verdict consistency, and context formatting.
+
+Run clinical sanity checks across sample biomedical claims:
+```bash
+python backend/eval/sanity_check.py
+```
 
 Validate frontend production bundle:
 ```bash
@@ -327,6 +384,8 @@ cd frontend && npm run build
 ## Benchmark Datasets & Citations
 
 - **SciFact Dataset**: [Allen Institute for AI (Wadden et al., EMNLP 2020)](https://github.com/allenai/scifact) - *Fact-Checking Scientific Claims with Evidence*.
+- **HealthVer Dataset**: [Sarrouti et al., NAACL-HLT 2021](https://github.com/sarrouti/HealthVer) - *Evidence-Based Verification of Coronavirus and Health-Related Claims*.
+- **ManConCorpus**: [Alamri & Stevenson, BMC Med Inform Decis Mak 2016](https://pmc.ncbi.nlm.nih.gov/articles/PMC10919922/) - *Corpus of Contradictory Information in Clinical Trial Abstracts*.
 - **PubMed REST APIs**: National Center for Biotechnology Information (NCBI) Entrez E-utilities.
 - **Google Generative AI**: [Google AI Studio & Gemini API](https://ai.google.dev).
 
