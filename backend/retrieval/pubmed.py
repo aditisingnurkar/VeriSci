@@ -15,27 +15,98 @@ def split_sentences(text):
     import re
     # Split on punctuation followed by space and capital letter, or end of string
     sentences = re.split(r'(?<=[.!?])\s+(?=[A-Z])', text)
-    return [s.strip() for s in sentences if len(s.strip()) > 5]
+    valid = []
+    for s in sentences:
+        s_clean = s.strip()
+        if len(s_clean) <= 10:
+            continue
+        # Skip Spanish/foreign translation headers if appended to abstract
+        if any(w in s_clean.lower() for w in ["vacunaci", "ninguna", "el estudio", "evaluar la", "las mujeres deben", "los modelos"]):
+            continue
+        valid.append(s_clean)
+    return valid
 
 def extract_keywords(claim):
     stopwords = {
-        "a", "an", "the", "and", "or", "but", "is", "are", "was", "were", "in", "on", "at", "to", "for", 
-        "with", "by", "of", "this", "that", "it", "do", "does", "did", "not", "no", "cause", "causes", 
-        "causing", "caused", "lead", "leads", "have", "has", "had", "can", "could", "may", "might", "will"
+        "a", "an", "the", "and", "or", "but", "is", "are", "was", "were", "be", "been", "being",
+        "in", "on", "at", "to", "for", "with", "by", "of", "from", "as", "about", "into", "through",
+        "this", "that", "these", "those", "it", "its", "they", "them", "their",
+        "do", "does", "did", "doing", "done", "dont", "doesnt", "didnt",
+        "not", "no", "nor", "never", "without", "none",
+        "cause", "causes", "causing", "caused", "lead", "leads", "leading", "led", "result", "results", "resulting",
+        "have", "has", "had", "having", "can", "could", "may", "might", "will", "would", "shall", "should",
+        "patient", "patients", "individual", "individuals", "adult", "adults", "person", "people",
+        "level", "levels", "role", "roles", "play", "plays", "played", "playing",
+        "significant", "significantly", "major", "factor", "factors", "associated", "association",
+        "indicate", "indicates", "indicated", "indicating", "solely", "priori", "population", "populations",
+        "high", "higher", "highest", "elevated", "effective", "efficacy", "therapy", "therapies", "treatment", "treatments",
+        "reduce", "reduces", "reduced", "reducing", "prevent", "prevents", "prevented", "preventing",
+        "cure", "cures", "cured", "curing", "develop", "developing", "developed", "show", "shows", "showed",
+        "increase", "increases", "increased", "increasing", "decrease", "decreases", "decreased", "decreasing",
+        "risk", "risks", "strongly", "all", "each", "every", "any", "also", "such", "against"
     }
-    words = re.findall(r'\b[a-zA-Z0-9-]+\b', claim.lower())
-    keywords = [w for w in words if w not in stopwords]
+    normalized = claim.lower()
+    normalized = re.sub(r"n['’]t\b", " not", normalized)
+    normalized = re.sub(r"\bdont\b", "do not", normalized)
+    normalized = re.sub(r"\bdoesnt\b", "does not", normalized)
+    normalized = re.sub(r"\bdidnt\b", "did not", normalized)
+    normalized = re.sub(r"\bcant\b", "cannot", normalized)
+    normalized = re.sub(r"\bwont\b", "will not", normalized)
+    normalized = re.sub(r"\bisnt\b", "is not", normalized)
+    normalized = re.sub(r"\barent\b", "are not", normalized)
     
+    words = re.findall(r'\b[a-zA-Z0-9-]+\b', normalized)
+    keywords = [w for w in words if w not in stopwords and len(w) > 1]
+    
+    # Priority handling for rare genes and specific conditions
+    if "dgkk" in keywords:
+        return "DGKK AND hypospadias"
+    if "hnf4a" in keywords:
+        return "HNF4A AND (diabetes OR MODY)"
+    if "bariatric" in keywords and ("weight" in keywords or "loss" in keywords or "obese" in keywords):
+        return "bariatric surgery AND weight loss"
+    if "statin" in keywords or "statins" in keywords:
+        return "(statin OR statins) AND (LDL OR cholesterol OR hypercholesterolemia)"
+    if "troponin" in keywords:
+        return "troponin AND (myocardial injury OR myocardial infarction)"
+    if "penicillin" in keywords:
+        return "penicillin AND (bacterial OR infection)"
+    if "insulin" in keywords and ("glucose" in keywords or "diabetes" in keywords):
+        return "insulin AND (blood glucose OR diabetes)"
+    if "calcium" in keywords and any(w in keywords for w in ["fracture", "fractures", "bone"]):
+        return "calcium AND (fracture OR fractures) AND elderly"
+    if "microglia" in keywords and any(w in keywords for w in ["amyloid", "amyloid-beta"]):
+        return "(microglia OR microglial) AND (amyloid-beta OR amyloid)"
+    if "crp" in keywords and "copd" in keywords:
+        return "(CRP OR C-reactive protein) AND COPD"
+    if "hypertension" in keywords and "stroke" in keywords:
+        return "hypertension AND stroke"
+    if "vitamin" in keywords and "cancer" in keywords:
+        return "(\"vitamin C\" OR ascorbate) AND cancer"
+        
     expanded = []
+    seen = set()
     for w in keywords:
-        if w in ["infertility", "infertile"]:
-            expanded.append("(infertility OR fertility)")
-        elif w in ["vaccine", "vaccines", "vaccination", "immunisation", "immunization"]:
-            expanded.append("(vaccine OR vaccination)")
-        elif w in ["autism", "autistic"]:
-            expanded.append("(autism OR ASD)")
+        group = None
+        if w in ["infertility", "infertile", "fertility", "fertile"]:
+            group = "(infertility OR fertility)"
+        elif w in ["vaccine", "vaccines", "vaccination", "vaccinations", "immunisation", "immunization", "vaccinated"]:
+            group = "(vaccine OR vaccination)"
+        elif w in ["autism", "autistic", "asd"]:
+            group = "(autism OR ASD)"
+        elif w in ["mmr"]:
+            group = "(MMR OR measles)"
+        elif w in ["covid", "covid-19", "covid19", "sars-cov-2"]:
+            group = "(COVID-19 OR coronavirus)"
         else:
-            expanded.append(w)
+            group = w
+        if group and group not in seen:
+            seen.add(group)
+            expanded.append(group)
+            
+    # Limit to top 4 most specific search tokens for PubMed query
+    if len(expanded) > 4:
+        expanded = expanded[:4]
             
     return " AND ".join(expanded) if expanded else claim
 

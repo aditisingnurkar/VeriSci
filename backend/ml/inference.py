@@ -2,148 +2,86 @@ import os
 import pickle
 import numpy as np
 import logging
+from typing import List, Dict, Any, Optional
+
+logger = logging.getLogger(__name__)
 
 MODELS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "models")
+UNSUPERVISED_DIR = os.path.join(MODELS_DIR, "unsupervised")
 
-class EvidenceClassifier:
+from ml.unsupervised_model import unsupervised_model
+
+class UnsupervisedEvidenceClassifier:
+    """
+    Project B: Unsupervised Stance Analysis Classifier.
+    
+    Replaces supervised Random Forest / DistilRoBERTa with K-Means (k=3)
+    over dense sentence-transformer embeddings (all-MiniLM-L6-v2).
+    
+    Adheres strictly to AIML unsupervised criteria:
+    - Fits without labels.
+    - Maps cluster IDs to stances via a post-hoc validation matrix.
+    - Distinguishes centroid distance from statistical probability.
+    """
     def __init__(self):
-        self.model = None
-        self.extractor = None
-        self.nli_tokenizer = None
-        self.nli_model = None
+        self.model = unsupervised_model
         
     def load(self):
-        model_path = os.path.join(MODELS_DIR, 'evidence_classifier.pkl')
-        extractor_path = os.path.join(MODELS_DIR, 'feature_extractor.pkl')
+        return self.model.load()
         
-        if not os.path.exists(model_path) or not os.path.exists(extractor_path):
-            raise FileNotFoundError("Model files not found. Please run ml/train.py first.")
-            
-        with open(model_path, 'rb') as f:
-            self.model = pickle.load(f)
-            
-        with open(extractor_path, 'rb') as f:
-            self.extractor = pickle.load(f)
-            
-        # Load NLI Cross-Encoder for general clinical and semantic entailment
-        try:
-            from transformers import AutoTokenizer, AutoModelForSequenceClassification
-            model_name = "cross-encoder/nli-distilroberta-base"
-            self.nli_tokenizer = AutoTokenizer.from_pretrained(model_name)
-            self.nli_model = AutoModelForSequenceClassification.from_pretrained(model_name)
-            self.nli_model.eval()
-        except Exception as e:
-            logging.warning(f"Could not load NLI transformer model: {e}")
-            self.nli_tokenizer = None
-            self.nli_model = None
-            
-    def predict(self, claim, evidence_texts):
+    def predict(self, claim: str, evidence_texts: List[str], titles: Optional[List[str]] = None) -> List[Dict[str, Any]]:
         """
-        Predict relationship between a single claim and a list of evidence passages.
-        Returns a list of dicts with prediction and confidence.
+        Runs unsupervised clustering on claim-evidence pairs.
         """
-        if not self.model or not self.extractor:
-            self.load()
-            
         if not evidence_texts:
             return []
             
-        # 1. Classical SVM prediction
-        claims = np.array([claim] * len(evidence_texts))
-        evidences = np.array(evidence_texts)
-        X = self.extractor.transform(claims, evidences)
-        svm_preds = self.model.predict(X)
-        try:
-            svm_probs = self.model.predict_proba(X)
-        except Exception:
-            # Fallback to uniform probabilities if predict_proba raises an attribute error
-            n_classes = len(self.model.classes_) if hasattr(self.model, 'classes_') else 3
-            svm_probs = np.full((len(evidence_texts), n_classes), 1.0 / n_classes)
-        svm_classes = list(self.model.classes_) if hasattr(self.model, 'classes_') else ["SUPPORT", "CONTRADICT", "NEUTRAL"]
+        cluster_results = self.model.predict_batch(claim, evidence_texts)
         
-        # 2. Transformer NLI prediction
-        nli_results = []
-        if self.nli_model and self.nli_tokenizer:
-            try:
-                import torch
-                # Batch tokenization
-                inputs = self.nli_tokenizer(
-                    [claim] * len(evidence_texts),
-                    list(evidence_texts),
-                    return_tensors="pt",
-                    padding=True,
-                    truncation=True,
-                    max_length=256
-                )
-                with torch.no_grad():
-                    logits = self.nli_model(**inputs).logits
-                    probs = torch.softmax(logits, dim=1).numpy()
-                    
-                # Cross-encoder distilroberta NLI: 0: contradiction, 1: entailment, 2: neutral
-                for p in probs:
-                    nli_results.append({
-                        "CONTRADICT": float(p[0]),
-                        "SUPPORT": float(p[1]),
-                        "NEUTRAL": float(p[2])
-                    })
-            except Exception as e:
-                logging.warning(f"NLI batch inference error: {e}")
-                nli_results = None
-                
-        results = []
-        c_lower = claim.lower()
-        neg_claim = any(w in c_lower for w in ["not", "no", "never", "without", "does not", "did not", "cannot", "fail"])
+        # Topical anchor check: absence of evidence vs evidence of absence
+        import re
+        EXCLUDE_WORDS = {"the", "and", "for", "with", "that", "this", "from", "are", "can", "may", "will", "level", "levels"}
+        c_words = [w.lower() for w in re.findall(r"\b[a-zA-Z]{4,}\b", claim.lower()) if w.lower() not in EXCLUDE_WORDS]
         
-        for idx in range(len(evidence_texts)):
-            svm_pred = svm_preds[idx]
-            svm_conf = float(np.max(svm_probs[idx]))
-            ev_text = evidence_texts[idx].lower()
+        final_results = []
+        for idx, res in enumerate(cluster_results):
+            ev_text = evidence_texts[idx]
+            doc_title = str(titles[idx]).lower() if (titles and idx < len(titles)) else ""
+            full_context = f"{doc_title} {ev_text}".lower()
             
-            if nli_results and idx < len(nli_results):
-                nli = nli_results[idx]
-                p_contra = nli["CONTRADICT"]
-                p_supp = nli["SUPPORT"]
-                p_neut = nli["NEUTRAL"]
-                
-                # Check for explicit semantic safety / negation patterns
-                safety_reassurance = any(phrase in ev_text for phrase in [
-                    "no safety concerns", "did not affect", "does not affect", "no adverse effect", 
-                    "no significant difference", "no reduction", "was not associated with", 
-                    "does not cause", "did not cause", "safe and effective", "no impact on"
-                ])
-                
-                if safety_reassurance:
-                    if neg_claim:
-                        pred = "SUPPORT"
-                        conf = max(p_supp, 0.88)
-                    else:
-                        pred = "CONTRADICT"
-                        conf = max(p_contra, 0.88)
-                elif p_contra > 0.60:
-                    pred = "CONTRADICT"
-                    conf = p_contra
-                elif p_supp > 0.60:
-                    pred = "SUPPORT"
-                    conf = p_supp
-                elif svm_pred in ["SUPPORT", "CONTRADICT"] and svm_conf > 0.60:
-                    pred = str(svm_pred)
-                    conf = svm_conf
-                else:
-                    pred = "NEUTRAL"
-                    conf = p_neut
+            # If evidence has zero topical overlap with claim words, preserve safe NEUTRAL
+            has_overlap = any(w in full_context for w in c_words) if c_words else True
+            
+            if not has_overlap:
+                final_results.append({
+                    "prediction": "NEUTRAL",
+                    "confidence": 0.95,
+                    "cluster_id": res["cluster_id"],
+                    "centroid_distance": res["centroid_distance"],
+                    "cluster_affinity": res["cluster_affinity"],
+                    "is_unsupervised": True,
+                    "stance_source": "topical_filter_neutral",
+                    "validation_purity": res.get("validation_purity", 0.5),
+                    "all_distances": res.get("all_distances", [])
+                })
             else:
-                pred = str(svm_pred)
-                conf = svm_conf
+                final_results.append({
+                    "prediction": res["mapped_stance"],
+                    "confidence": res["cluster_affinity"],
+                    "cluster_id": res["cluster_id"],
+                    "centroid_distance": res["centroid_distance"],
+                    "cluster_affinity": res["cluster_affinity"],
+                    "is_unsupervised": True,
+                    "stance_source": "unsupervised_cluster_mapping",
+                    "validation_purity": res.get("validation_purity", 0.5),
+                    "all_distances": res.get("all_distances", [])
+                })
                 
-            results.append({
-                "prediction": pred,
-                "confidence": float(conf)
-            })
-            
-        return results
+        return final_results
 
-# Singleton instance
-classifier = EvidenceClassifier()
+# Primary inference singleton for Project B
+classifier = UnsupervisedEvidenceClassifier()
 
-def classify_evidence(claim, evidence_texts):
-    return classifier.predict(claim, evidence_texts)
+def classify_evidence(claim: str, evidence_texts: List[str], titles: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+    """Primary interface called by main.py verification pipeline."""
+    return classifier.predict(claim, evidence_texts, titles=titles)

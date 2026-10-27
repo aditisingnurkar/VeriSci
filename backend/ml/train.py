@@ -1,8 +1,10 @@
 import os
 import pickle
+import argparse
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC
+from sklearn.svm import LinearSVC, SVC
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, classification_report
 import sys
@@ -10,7 +12,7 @@ import sys
 # Add backend to path
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from ml.dataset import get_train_dev_data
+from ml.dataset import get_train_dev_data, get_three_dataset_data
 from ml.features import FeatureExtractor
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
@@ -19,21 +21,26 @@ MODELS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "models")
 def evaluate_model(model_name, model, X_test, y_test):
     y_pred = model.predict(X_test)
     print(f"\n--- {model_name} ---")
-    print(classification_report(y_test, y_pred))
+    print(classification_report(y_test, y_pred, digits=4))
     
     # Calculate Macro F1 explicitly
-    macro_f1 = f1_score(y_test, y_pred, average='macro')
+    macro_f1 = f1_score(y_test, y_pred, average='macro', zero_division=0)
     print(f"Macro F1: {macro_f1:.4f}")
     
     print("Confusion Matrix:")
     print(confusion_matrix(y_test, y_pred, labels=["SUPPORT", "CONTRADICT", "NEUTRAL"]))
     return macro_f1
 
-def train_pipeline():
+def train_pipeline(three_datasets=True):
     os.makedirs(MODELS_DIR, exist_ok=True)
     
-    print("Loading datasets...")
-    train_df, dev_df = get_train_dev_data(DATA_DIR)
+    if three_datasets:
+        print("Loading Three-Dataset Combined Data (SciFact + HealthVer + ManConCorpus)...")
+        train_df, dev_df = get_three_dataset_data(DATA_DIR)
+    else:
+        print("Loading SciFact-only Data...")
+        train_df, dev_df = get_train_dev_data(DATA_DIR)
+
     print(f"Train size: {len(train_df)}")
     print(f"Dev size: {len(dev_df)}")
     
@@ -52,10 +59,11 @@ def train_pipeline():
     
     print("\nTraining models...")
     
+    # Use LinearSVC with dual=False for fast linear SVM on larger datasets
     models = {
-        "Logistic Regression": LogisticRegression(max_iter=1000, class_weight='balanced'),
-        "Linear SVM": SVC(kernel='linear', probability=True, class_weight='balanced'),
-        "Random Forest": RandomForestClassifier(n_estimators=100, class_weight='balanced', random_state=42)
+        "Logistic Regression": LogisticRegression(max_iter=1000, class_weight='balanced', random_state=42),
+        "Linear SVM": CalibratedClassifierCV(LinearSVC(dual=False, class_weight='balanced', random_state=42), cv=2),
+        "Random Forest": RandomForestClassifier(n_estimators=100, class_weight='balanced', random_state=42, n_jobs=-1)
     }
     
     best_f1 = 0
@@ -84,4 +92,8 @@ def train_pipeline():
     print("Training pipeline complete.")
 
 if __name__ == "__main__":
-    train_pipeline()
+    parser = argparse.ArgumentParser(description="VeriSci Stance Classification Training Pipeline")
+    parser.add_argument("--scifact-only", action="store_true", help="Train on SciFact only")
+    args = parser.parse_args()
+    train_pipeline(three_datasets=not args.scifact_only)
+

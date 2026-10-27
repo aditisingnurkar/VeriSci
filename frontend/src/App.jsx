@@ -4,6 +4,7 @@ import Footer from './components/Footer';
 import Home from './pages/Home';
 import Analysis from './pages/Analysis';
 import Results from './pages/Results';
+import Comparison from './pages/Comparison';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/analyze" element={<Analysis />} />
               <Route path="/results" element={<Results />} />
+              <Route path="/compare" element={<Comparison />} />
             </Routes>
           </div>
           <Footer />

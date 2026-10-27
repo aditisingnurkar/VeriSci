@@ -4,7 +4,7 @@ import EvidenceCard from '../components/EvidenceCard';
 import VerdictCard from '../components/VerdictCard';
 import ExplanationCard from '../components/ExplanationCard';
 import ClaimChat from '../components/ClaimChat';
-import { ArrowLeft, FileText, CheckCircle2, XCircle, MinusCircle, Layers, Cpu, Database, Filter } from 'lucide-react';
+import { ArrowLeft, FileText, CheckCircle2, XCircle, MinusCircle, Layers, Cpu, Database, Filter, Sparkles } from 'lucide-react';
 
 export default function Results() {
   const location = useLocation();
@@ -45,6 +45,24 @@ export default function Results() {
             strength={strength} 
             reason={reason} 
           />
+
+          {data.spelling_suggestion?.has_suggestion && (
+            <div className="mt-3 inline-flex flex-wrap items-center gap-2 px-3.5 py-2 rounded-xl bg-teal-950/50 border border-teal-500/30 text-xs text-teal-200 shadow-sm">
+              <Sparkles className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+              {data.spelling_suggestion.applied_to_retrieval ? (
+                <span>
+                  Query corrected for medical accuracy: evaluated evidence for{" "}
+                  <strong className="text-white font-medium">"{data.spelling_suggestion.suggested_claim}"</strong>
+                  <span className="text-slate-400 ml-1.5">(original: "{claim}")</span>
+                </span>
+              ) : (
+                <span>
+                  Suggested scientific spelling:{" "}
+                  <strong className="text-white font-medium">"{data.spelling_suggestion.suggested_claim}"</strong>
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* AI Explanation and Neural Chat */}
@@ -104,6 +122,30 @@ export default function Results() {
               )}
             </div>
           </section>
+        )}
+
+        {/* Unsupervised Diagnostics Banner */}
+        {data.unsupervised_diagnostics && (
+          <div className="p-4 sm:p-5 rounded-2xl science-card border-l-4 border-l-purple-400 bg-purple-950/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Cpu className="w-5 h-5 text-purple-400 shrink-0" />
+              <div>
+                <div className="font-mono text-xs font-bold text-purple-200">
+                  Unsupervised Stance Diagnostics (K-Means k=3)
+                </div>
+                <div className="text-xs text-slate-300 font-sans mt-0.5">
+                  Dominant Assigned Cluster: <strong className="text-white font-mono">Cluster #{data.unsupervised_diagnostics.dominant_cluster}</strong> | Geometric Centroid Distance Aggregation
+                </div>
+              </div>
+            </div>
+            <Link 
+              to="/compare"
+              className="px-3.5 py-1.5 rounded-xl bg-purple-900/40 hover:bg-purple-800/40 border border-purple-500/30 text-purple-200 text-xs font-mono font-medium flex items-center gap-1.5 transition-colors shrink-0"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+              <span>Compare with Supervised RF</span>
+            </Link>
+          </div>
         )}
 
         {/* Evidence List Section */}

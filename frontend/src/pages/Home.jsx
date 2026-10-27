@@ -56,11 +56,11 @@ export default function Home() {
           </div>
 
           <div className="p-4 rounded-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-md shadow-sm">
-            <div className="flex items-center gap-2 text-indigo-400 mb-1.5">
+            <div className="flex items-center gap-2 text-purple-400 mb-1.5">
               <Cpu className="w-4 h-4" />
-              <span className="text-xs font-mono font-bold text-slate-200">NLI Inference</span>
+              <span className="text-xs font-mono font-bold text-slate-200">K-Means (k=3)</span>
             </div>
-            <p className="text-xs text-slate-400 font-sans">Transformer cross-encoder</p>
+            <p className="text-xs text-slate-400 font-sans">Dense sentence embeddings</p>
           </div>
 
           <div className="p-4 rounded-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-md shadow-sm">

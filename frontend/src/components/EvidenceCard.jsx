@@ -75,14 +75,14 @@ export default function EvidenceCard({ evidence, index }) {
         "bg-slate-950/40 border-t md:border-t-0 md:border-l border-slate-800/50"
       )}>
         
-        <div className="flex items-center gap-1.5 mb-2.5 font-mono text-[11px] uppercase tracking-wider text-slate-400">
-          <FileText className="w-3.5 h-3.5 text-teal-400" />
-          <span>NLI Stance</span>
+        <div className="flex items-center gap-1.5 mb-2 font-mono text-[10px] uppercase tracking-wider text-purple-300 bg-purple-950/70 border border-purple-500/30 px-2.5 py-0.5 rounded-full">
+          <FileText className="w-3 h-3 text-purple-400" />
+          <span>Cluster #{evidence.cluster_id !== undefined ? evidence.cluster_id : 0} Mapping</span>
         </div>
         
         {/* Stance Badge */}
         <div className={cn(
-          "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono font-bold tracking-wide mb-3 border shadow-sm",
+          "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono font-bold tracking-wide mb-2.5 border shadow-sm",
           isSupport ? "bg-emerald-950/90 text-emerald-300 border-emerald-400/40" :
           isContradict ? "bg-rose-950/90 text-rose-300 border-rose-500/40" :
           "bg-slate-900 text-slate-300 border-slate-700"
@@ -92,20 +92,30 @@ export default function EvidenceCard({ evidence, index }) {
            <MinusCircle className="w-3.5 h-3.5 text-slate-400" />}
           
           <span>
-            {prediction === "SUPPORT" ? "Supports Claim" : 
-             prediction === "CONTRADICT" ? "Refutes Claim" : "Neutral / Insufficient"}
+            {prediction === "SUPPORT" ? "Mapped: Supports" : 
+             prediction === "CONTRADICT" ? "Mapped: Refutes" : "Mapped: Neutral"}
           </span>
         </div>
         
-        {/* Confidence Percentage */}
-        <div className="flex flex-col items-start md:items-center">
-          <span className="text-3xl font-extrabold text-white font-mono tracking-tight">
-            {(confidence * 100).toFixed(0)}%
+        {/* Geometric Centroid Distance & Affinity */}
+        <div className="flex flex-col items-start md:items-center w-full">
+          <div className="flex items-baseline gap-1">
+            <span className="text-[11px] font-mono text-slate-400">d =</span>
+            <span className="text-2xl font-extrabold text-white font-mono tracking-tight">
+              {evidence.centroid_distance !== undefined ? Number(evidence.centroid_distance).toFixed(3) : (confidence * 100).toFixed(0) + '%'}
+            </span>
+          </div>
+          <span className="text-[9px] font-mono uppercase tracking-widest text-slate-400 mt-0.5">
+            Centroid Distance (Geometric)
           </span>
-          <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400 mt-0.5">
-            Model Confidence
-          </span>
+          <div className="mt-1.5 text-[10px] font-mono text-purple-300/80 bg-purple-950/40 px-2 py-0.5 rounded border border-purple-500/20">
+            Affinity: {((evidence.cluster_affinity ?? confidence) * 100).toFixed(0)}%
+          </div>
         </div>
+
+        <p className="text-[9px] text-slate-500 font-sans mt-2.5 leading-tight hidden sm:block">
+          *Label-free cluster assigned via nearest centroid in 384-dim space.
+        </p>
       </div>
       
     </div>
