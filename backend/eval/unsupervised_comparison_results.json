@@ -1,0 +1,120 @@
+{
+  "evaluation_timestamp": "2026-10-27T04:33:55.214866Z",
+  "test_dataset_size": 4978,
+  "unsupervised_model": {
+    "model_name": "Unsupervised K-Means (k=3) + all-MiniLM-L6-v2",
+    "raw_clustering_metrics": {
+      "silhouette_score": 0.1512,
+      "adjusted_rand_index": 0.0712,
+      "normalized_mutual_info": 0.0884,
+      "inertia": 12867.0068359375,
+      "cluster_distribution": {
+        "2": 1726,
+        "1": 1723,
+        "0": 1529
+      }
+    },
+    "contingency_table": {
+      "1": {
+        "SUPPORT": 667,
+        "CONTRADICT": 416,
+        "NEUTRAL": 640
+      },
+      "2": {
+        "SUPPORT": 415,
+        "CONTRADICT": 269,
+        "NEUTRAL": 1042
+      },
+      "0": {
+        "SUPPORT": 137,
+        "CONTRADICT": 67,
+        "NEUTRAL": 1325
+      }
+    },
+    "validation_derived_mapping": {
+      "0": "NEUTRAL",
+      "1": "SUPPORT",
+      "2": "CONTRADICT"
+    },
+    "mapped_classification_metrics": {
+      "accuracy": 45.42,
+      "macro_f1": 0.4183,
+      "per_class": {
+        "SUPPORT": {
+          "precision": 0.3871,
+          "recall": 0.5472,
+          "f1": 0.4534
+        },
+        "CONTRADICT": {
+          "precision": 0.1559,
+          "recall": 0.3577,
+          "f1": 0.2171
+        },
+        "NEUTRAL": {
+          "precision": 0.8666,
+          "recall": 0.4406,
+          "f1": 0.5842
+        }
+      }
+    }
+  },
+  "supervised_baseline": {
+    "model_name": "Supervised Random Forest (100 Trees, Balanced)",
+    "classification_metrics": {
+      "accuracy": 71.7,
+      "macro_f1": 0.5703,
+      "per_class": {
+        "SUPPORT": {
+          "precision": 0.6195,
+          "recall": 0.4061,
+          "f1": 0.4906
+        },
+        "CONTRADICT": {
+          "precision": 0.4882,
+          "recall": 0.3019,
+          "f1": 0.373
+        },
+        "NEUTRAL": {
+          "precision": 0.7666,
+          "recall": 0.9468,
+          "f1": 0.8472
+        }
+      }
+    }
+  },
+  "comparison_samples": [
+    {
+      "claim": "For most patients, COVID-19 begins and ends in their lungs, because like the flu, coronaviruses are respiratory diseases",
+      "evidence": "In this study, we collected blood from COVID-19 patients who have recently become virus-free and therefore were discharged, and analyzed their SARS-CoV-2-specif...",
+      "ground_truth": "NEUTRAL",
+      "supervised_rf_prediction": "NEUTRAL",
+      "unsupervised_cluster_id": 1,
+      "unsupervised_mapped_stance": "SUPPORT"
+    },
+    {
+      "claim": "While there is very limited data (and none specific for COVID-19), the following cocktail may have a role in the prevention/mitigation of COVID-19 disease. Vitamin C 500 mg BID and Quercetin 250 mg daily Zinc 75-100 mg/day",
+      "evidence": "The majority of documents encouraged the consumption of fruits, vegetables, and whole grain foods. Thirty-one percent of the guidelines highlighted the importan...",
+      "ground_truth": "NEUTRAL",
+      "supervised_rf_prediction": "NEUTRAL",
+      "unsupervised_cluster_id": 1,
+      "unsupervised_mapped_stance": "SUPPORT"
+    },
+    {
+      "claim": "Covid-19 is infecting quite a few people, many with vicious effects.",
+      "evidence": "The recently discovered novel coronavirus, SARS-CoV-2 (COVID-19 virus), has brought the whole world to standstill with critical challenges, affecting both healt...",
+      "ground_truth": "NEUTRAL",
+      "supervised_rf_prediction": "NEUTRAL",
+      "unsupervised_cluster_id": 1,
+      "unsupervised_mapped_stance": "SUPPORT"
+    },
+    {
+      "claim": "clinical trials are needed to determine if endogenously created vitamin D could be effective for the prevention and treatment of COVID-19",
+      "evidence": "Several studies demonstrated the role of vitamin D in reducing the risk of acute viral respiratory tract infections and pneumonia. These include direct inhibiti...",
+      "ground_truth": "CONTRADICT",
+      "supervised_rf_prediction": "SUPPORT",
+      "unsupervised_cluster_id": 1,
+      "unsupervised_mapped_stance": "SUPPORT"
+    }
+  ],
+  "key_takeaway": "K-Means clustering with sentence embeddings groups claims and evidence based on topic and semantic similarity. Because clustering is completely label-free, it lacks explicit semantic supervision for nuanced clinical negation (e.g., distinguishing 'A causes B' from 'A does not cause B'). Consequently, supervised Random Forest outperforms unsupervised K-Means on stance classification accuracy, while K-Means demonstrates how far semantic geometric proximity can take exploratory claim grouping without any labelled training pairs."
+}

@@ -124,6 +124,30 @@ export default function Results() {
           </section>
         )}
 
+        {/* Unsupervised Diagnostics Banner */}
+        {data.unsupervised_diagnostics && (
+          <div className="p-4 sm:p-5 rounded-2xl science-card border-l-4 border-l-purple-400 bg-purple-950/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Cpu className="w-5 h-5 text-purple-400 shrink-0" />
+              <div>
+                <div className="font-mono text-xs font-bold text-purple-200">
+                  Unsupervised Stance Diagnostics (K-Means k=3)
+                </div>
+                <div className="text-xs text-slate-300 font-sans mt-0.5">
+                  Dominant Assigned Cluster: <strong className="text-white font-mono">Cluster #{data.unsupervised_diagnostics.dominant_cluster}</strong> | Geometric Centroid Distance Aggregation
+                </div>
+              </div>
+            </div>
+            <Link 
+              to="/compare"
+              className="px-3.5 py-1.5 rounded-xl bg-purple-900/40 hover:bg-purple-800/40 border border-purple-500/30 text-purple-200 text-xs font-mono font-medium flex items-center gap-1.5 transition-colors shrink-0"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+              <span>Compare with Supervised RF</span>
+            </Link>
+          </div>
+        )}
+
         {/* Evidence List Section */}
         <section className="space-y-5">
           <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">

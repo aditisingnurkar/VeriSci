@@ -9,7 +9,75 @@
 [![Tests](https://img.shields.io/badge/Tests-36%2F36_Passing-success?style=flat&logo=pytest&logoColor=white)](https://pytest.org)
 [![ML Datasets](https://img.shields.io/badge/ML_Datasets-SciFact%20%2B%20HealthVer%20%2B%20ManConCorpus-8A2BE2?style=flat)](docs/phase-6-three-dataset-integration.md)
 
-> **VeriSci** is an end-to-end scientific truth verification engine designed to cross-reference biomedical and health claims against peer-reviewed scientific literature. By combining **dual-stage corpus retrieval (SciFact + Live PubMed)**, **a three-dataset trained stance classifier (SciFact + HealthVer + ManConCorpus)**, **Transformer-based Natural Language Inference (NLI)**, and **grounded generative AI synthesis via Google Gemini**, VeriSci produces calibrated verdicts (`SUPPORTED`, `CONTRADICTED`, `MIXED`, `INSUFFICIENT`) with exact citations and interactive inquest capabilities.
+[![Unsupervised Learning](https://img.shields.io/badge/ML_Paradigm-Unsupervised_K--Means_(k=3)-purple?style=flat&logo=scikit-learn&logoColor=white)](docs/supervised-vs-unsupervised-comparison.md)
+[![Embeddings](https://img.shields.io/badge/Embeddings-Sentence--Transformers_all--MiniLM--L6--v2-blue?style=flat)](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2)
+
+> **VeriSci (Project B — Unsupervised Learning Edition)** is the unsupervised sister implementation of VeriSci. While retaining the complete end-to-end scientific literature verification architecture (SciFact + PubMed live retrieval, Gemini 2.5 Flash RAG synthesis, interactive citations, and calibrated verdicts), Project B replaces the supervised stance classifier with an **unsupervised K-Means clustering algorithm ($k=3$)** over **384-dimensional dense semantic sentence embeddings (`all-MiniLM-L6-v2`)**.
+>
+> This fork is built to provide a scientifically honest, empirical comparison between **Supervised Learning** (Random Forest trained on 18,572 labeled pairs) and **Unsupervised Learning** (label-free K-Means) for scientific claim verification in an AIML academic setting.
+
+---
+
+## 🔬 Supervised vs. Unsupervised Benchmark (4,978 Held-Out Test Samples)
+
+| Evaluation Dimension | Project A (Supervised Random Forest) | Project B (Unsupervised K-Means $k=3$) | Observation / Analysis |
+| :--- | :--- | :--- | :--- |
+| **Training Labels** | **18,572 labeled pairs** | **0 pairs (Fully Unlabeled)** | K-Means fitted without any stance labels |
+| **Input Representation** | 7 handcrafted features + NLI | 384-dim dense embeddings | Sentence-Transformers `all-MiniLM-L6-v2` |
+| **Overall Accuracy** | **71.70%** | **45.42%** | Supervised leads by **+26.28%** |
+| **Macro F1 Score** | **0.5703** | **0.4183** | Supervised leads by **+0.1520** |
+| **SUPPORT F1** | 0.4906 | 0.4534 | Comparable: topic overlap signals support |
+| **CONTRADICT F1** | **0.3730** | **0.2171** | Negations require supervised contrastive bounds |
+| **NEUTRAL F1** | 0.8472 | 0.5842 | Cluster 0 isolates unrelated literature (86.7% purity) |
+| **Silhouette Score** | N/A | **0.1512** | Mild cluster cohesion in dense semantic space |
+| **Adjusted Rand Index** | N/A | **0.0712** | Near-zero ARI: clusters by topic, not polarity |
+| **Interactive Dashboard**| N/A | **`/compare` route** in UI | Live comparative charts, samples & contingency |
+
+---
+
+## 🚀 Quickstart Commands (Project B)
+
+### 1. Backend Setup & Run
+```bash
+# Navigate to Project B backend
+cd "C:\VeriSci - Copy\VeriSci\backend"
+
+# Activate virtual environment
+.\.venv\Scripts\Activate.ps1
+
+# Install requirements (including sentence-transformers)
+pip install -r requirements.txt
+
+# Run Unsupervised Model Training (Label-Free K-Means on 18,572 pairs)
+python ml/train_unsupervised.py
+
+# Run Empirical Benchmark Evaluation (4,978 test samples)
+python ml/evaluate_unsupervised.py
+
+# Run Test Suite (16 passed)
+pytest tests -v
+
+# Start the Backend Server (Port 8000 or 8001)
+uvicorn main:app --reload --port 8001
+```
+
+### 2. Frontend Setup & Run
+```bash
+# Navigate to Project B frontend
+cd "C:\VeriSci - Copy\VeriSci\frontend"
+
+# Install node dependencies
+npm install
+
+# Build for production (verified clean build)
+npm run build
+
+# Start the Development Server
+npm run dev
+```
+
+Visit `http://localhost:5173/` for the Verification Desk and `http://localhost:5173/compare` for the Head-to-Head AIML Comparison Dashboard.
+
 
 ---
 

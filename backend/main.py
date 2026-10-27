@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from contextlib import asynccontextmanager
 import sys
 import os
+import json
 import logging
 import uuid
 import time
@@ -82,8 +83,12 @@ class ChatRequest(BaseModel):
     message: str
     history: list[ChatMessage] = []
 
+@app.get("/health")
+def health_endpoint():
+    return {"status": "ok", "model": "Unsupervised K-Means (k=3) + Sentence-Transformers"}
+
 @app.get("/api/health")
-def health_check():
+def api_health():
     return {"status": "ok"}
 
 @app.post("/api/retrieve")
@@ -140,7 +145,7 @@ def verify(req: ClaimRequest):
         if os.environ.get("ENABLE_PUBMED", "true").lower() != "false":
             sources_used.append("PubMed")
         
-        classifier_meta = "Hybrid Transformer NLI + Three-Dataset Random Forest"
+        classifier_meta = "Unsupervised K-Means (k=3) + Sentence-Transformers (all-MiniLM-L6-v2)"
         
         if not retrieved:
             result = {
@@ -154,7 +159,7 @@ def verify(req: ClaimRequest):
                 "counts": {"support": 0, "contradict": 0, "neutral": 0, "papers": 0},
                 "evidence": [],
                 "spelling_suggestion": spelling_info,
-                "model": {"retriever": "SciFact TF-IDF + PubMed Live", "classifier": classifier_meta, "version": "2.0"},
+                "model": {"retriever": "SciFact TF-IDF + PubMed Live", "classifier": classifier_meta, "version": "2.0-Unsupervised"},
                 "sources_used": sources_used
             }
         else:
@@ -170,7 +175,7 @@ def verify(req: ClaimRequest):
                     "counts": {"support": 0, "contradict": 0, "neutral": 0, "papers": 0},
                     "evidence": [],
                     "spelling_suggestion": spelling_info,
-                    "model": {"retriever": "SciFact TF-IDF + PubMed Live", "classifier": classifier_meta, "version": "2.0"},
+                    "model": {"retriever": "SciFact TF-IDF + PubMed Live", "classifier": classifier_meta, "version": "2.0-Unsupervised"},
                     "sources_used": sources_used
                 }
             else:
@@ -194,7 +199,14 @@ def verify(req: ClaimRequest):
                         "sentence_idx": ev.get("sentence_idx", 0),
                         "relevance_score": ev["relevance_score"],
                         "prediction": ml["prediction"],
-                        "confidence": ml["confidence"]
+                        "confidence": ml["confidence"],
+                        "cluster_id": ml.get("cluster_id", 0),
+                        "centroid_distance": ml.get("centroid_distance", 0.0),
+                        "cluster_affinity": ml.get("cluster_affinity", ml.get("confidence", 0.5)),
+                        "is_unsupervised": True,
+                        "stance_source": ml.get("stance_source", "unsupervised_cluster_mapping"),
+                        "validation_purity": ml.get("validation_purity", 0.5),
+                        "all_distances": ml.get("all_distances", [])
                     })
                     
                 agg_result = aggregate_predictions(predictions)
@@ -210,8 +222,13 @@ def verify(req: ClaimRequest):
                     "counts": agg_result["counts"],
                     "evidence": predictions,
                     "spelling_suggestion": spelling_info,
-                    "model": {"retriever": "SciFact TF-IDF + PubMed Live", "classifier": classifier_meta, "version": "2.0"},
-                    "sources_used": sources_used
+                    "model": {"retriever": "SciFact TF-IDF + PubMed Live", "classifier": classifier_meta, "version": "2.0-Unsupervised"},
+                    "sources_used": sources_used,
+                    "unsupervised_diagnostics": {
+                        "dominant_cluster": agg_result.get("dominant_cluster", -1),
+                        "cluster_weights": agg_result.get("cluster_weights", {}),
+                        "methodology": agg_result.get("methodology", "Unsupervised K-Means")
+                    }
                 }
                 
         # Cache the result
@@ -277,3 +294,20 @@ def chat_endpoint(req: ChatRequest):
     except Exception as e:
         logging.error(f"Chat error: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.get("/api/comparison")
+def comparison_endpoint():
+    """
+    Returns empirical benchmark results comparing Supervised Random Forest vs. Unsupervised K-Means.
+    """
+    results_path = os.path.join(os.path.dirname(__file__), "eval", "unsupervised_comparison_results.json")
+    if not os.path.exists(results_path):
+        raise HTTPException(status_code=404, detail="Comparison benchmark results not found.")
+    try:
+        with open(results_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data
+    except Exception as e:
+        logging.error(f"Comparison endpoint error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to load comparison results: {str(e)}")
+

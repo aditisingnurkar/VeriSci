@@ -17,12 +17,12 @@ export default function Navbar() {
                 <span className="font-display font-bold text-lg tracking-tight text-white group-hover:text-teal-300 transition-colors">
                   Veri<span className="text-teal-400">Sci</span>
                 </span>
-                <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700/60">
-                  Research Edition
+                <span className="text-[10px] font-mono font-medium px-2.5 py-0.5 rounded-full bg-purple-950/80 text-purple-300 border border-purple-500/40">
+                  Unsupervised Edition (k=3)
                 </span>
               </div>
               <span className="text-[10px] font-mono text-slate-400 tracking-wider hidden sm:block">
-                Biomedical Evidence Verification System
+                Biomedical Evidence Verification System (Sentence Embeddings + K-Means)
               </span>
             </div>
           </Link>
@@ -44,6 +44,13 @@ export default function Navbar() {
                 className="px-3 py-1.5 rounded-lg text-slate-200 hover:text-white hover:bg-slate-800/70 transition-all font-sans text-xs font-semibold"
               >
                 Verification Desk
+              </Link>
+              <Link 
+                to="/compare" 
+                className="px-3 py-1.5 rounded-lg text-purple-300 hover:text-purple-200 bg-purple-950/40 hover:bg-purple-900/40 border border-purple-500/30 transition-all font-sans text-xs font-semibold flex items-center gap-1.5"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                <span>Model Comparison</span>
               </Link>
               <a 
                 href="https://github.com/allenai/scifact" 
