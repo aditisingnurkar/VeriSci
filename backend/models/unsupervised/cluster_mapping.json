@@ -1,0 +1,43 @@
+{
+  "cluster_to_stance": {
+    "0": "NEUTRAL",
+    "1": "SUPPORT",
+    "2": "CONTRADICT"
+  },
+  "cluster_purities": {
+    "0": 0.8505,
+    "1": 0.3011,
+    "2": 0.14
+  },
+  "contingency_table": {
+    "0": {
+      "SUPPORT": 153,
+      "CONTRADICT": 80,
+      "NEUTRAL": 1326
+    },
+    "2": {
+      "SUPPORT": 259,
+      "CONTRADICT": 182,
+      "NEUTRAL": 859
+    },
+    "1": {
+      "SUPPORT": 524,
+      "CONTRADICT": 385,
+      "NEUTRAL": 831
+    }
+  },
+  "validation_metrics": {
+    "silhouette_score": 0.0661,
+    "adjusted_rand_index": 0.043,
+    "normalized_mutual_info": 0.0594,
+    "mapped_accuracy": 0.4418,
+    "mapped_macro_f1": 0.3861,
+    "cluster_distribution": {
+      "1": 1740,
+      "0": 1559,
+      "2": 1300
+    }
+  },
+  "is_post_hoc_validation_derived": true,
+  "derived_at": "2026-10-27T04:30:53.024153Z"
+}

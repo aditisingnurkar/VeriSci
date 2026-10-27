@@ -17,8 +17,10 @@ ENV/
 
 # Data and Artifacts
 backend/data/
+backend/models/*
+!backend/models/unsupervised/
 *.pkl
-models/
+!backend/models/unsupervised/*.pkl
 saved_index/
 data.tar.gz
 ._*

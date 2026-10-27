@@ -1,0 +1,12 @@
+{
+  "algorithm": "K-Means Clustering",
+  "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+  "embedding_dim": 384,
+  "n_clusters": 3,
+  "random_state": 42,
+  "inertia": 12867.0068359375,
+  "training_samples": 18572,
+  "dataset_source": "SciFact + HealthVer + ManConCorpus",
+  "created_at": "2026-10-27T04:30:53.023629Z",
+  "license": "Apache 2.0 (SentenceTransformers all-MiniLM-L6-v2) + MIT (VeriSci)"
+}
