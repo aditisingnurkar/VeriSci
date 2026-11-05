@@ -9,75 +9,7 @@
 [![Tests](https://img.shields.io/badge/Tests-36%2F36_Passing-success?style=flat&logo=pytest&logoColor=white)](https://pytest.org)
 [![ML Datasets](https://img.shields.io/badge/ML_Datasets-SciFact%20%2B%20HealthVer%20%2B%20ManConCorpus-8A2BE2?style=flat)](docs/phase-6-three-dataset-integration.md)
 
-[![Unsupervised Learning](https://img.shields.io/badge/ML_Paradigm-Unsupervised_K--Means_(k=3)-purple?style=flat&logo=scikit-learn&logoColor=white)](docs/supervised-vs-unsupervised-comparison.md)
-[![Embeddings](https://img.shields.io/badge/Embeddings-Sentence--Transformers_all--MiniLM--L6--v2-blue?style=flat)](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2)
-
-> **VeriSci (Project B — Unsupervised Learning Edition)** is the unsupervised sister implementation of VeriSci. While retaining the complete end-to-end scientific literature verification architecture (SciFact + PubMed live retrieval, Gemini 2.5 Flash RAG synthesis, interactive citations, and calibrated verdicts), Project B replaces the supervised stance classifier with an **unsupervised K-Means clustering algorithm ($k=3$)** over **384-dimensional dense semantic sentence embeddings (`all-MiniLM-L6-v2`)**.
->
-> This fork is built to provide a scientifically honest, empirical comparison between **Supervised Learning** (Random Forest trained on 18,572 labeled pairs) and **Unsupervised Learning** (label-free K-Means) for scientific claim verification in an AIML academic setting.
-
----
-
-## 🔬 Supervised vs. Unsupervised Benchmark (4,978 Held-Out Test Samples)
-
-| Evaluation Dimension | Project A (Supervised Random Forest) | Project B (Unsupervised K-Means $k=3$) | Observation / Analysis |
-| :--- | :--- | :--- | :--- |
-| **Training Labels** | **18,572 labeled pairs** | **0 pairs (Fully Unlabeled)** | K-Means fitted without any stance labels |
-| **Input Representation** | 7 handcrafted features + NLI | 384-dim dense embeddings | Sentence-Transformers `all-MiniLM-L6-v2` |
-| **Overall Accuracy** | **71.70%** | **45.42%** | Supervised leads by **+26.28%** |
-| **Macro F1 Score** | **0.5703** | **0.4183** | Supervised leads by **+0.1520** |
-| **SUPPORT F1** | 0.4906 | 0.4534 | Comparable: topic overlap signals support |
-| **CONTRADICT F1** | **0.3730** | **0.2171** | Negations require supervised contrastive bounds |
-| **NEUTRAL F1** | 0.8472 | 0.5842 | Cluster 0 isolates unrelated literature (86.7% purity) |
-| **Silhouette Score** | N/A | **0.1512** | Mild cluster cohesion in dense semantic space |
-| **Adjusted Rand Index** | N/A | **0.0712** | Near-zero ARI: clusters by topic, not polarity |
-| **Interactive Dashboard**| N/A | **`/compare` route** in UI | Live comparative charts, samples & contingency |
-
----
-
-## 🚀 Quickstart Commands (Project B)
-
-### 1. Backend Setup & Run
-```bash
-# Navigate to Project B backend
-cd "C:\VeriSci - Copy\VeriSci\backend"
-
-# Activate virtual environment
-.\.venv\Scripts\Activate.ps1
-
-# Install requirements (including sentence-transformers)
-pip install -r requirements.txt
-
-# Run Unsupervised Model Training (Label-Free K-Means on 18,572 pairs)
-python ml/train_unsupervised.py
-
-# Run Empirical Benchmark Evaluation (4,978 test samples)
-python ml/evaluate_unsupervised.py
-
-# Run Test Suite (16 passed)
-pytest tests -v
-
-# Start the Backend Server (Port 8000 or 8001)
-uvicorn main:app --reload --port 8001
-```
-
-### 2. Frontend Setup & Run
-```bash
-# Navigate to Project B frontend
-cd "C:\VeriSci - Copy\VeriSci\frontend"
-
-# Install node dependencies
-npm install
-
-# Build for production (verified clean build)
-npm run build
-
-# Start the Development Server
-npm run dev
-```
-
-Visit `http://localhost:5173/` for the Verification Desk and `http://localhost:5173/compare` for the Head-to-Head AIML Comparison Dashboard.
-
+> **VeriSci** is an end-to-end scientific truth verification engine designed to cross-reference biomedical and health claims against peer-reviewed scientific literature. By combining **dual-stage corpus retrieval (SciFact + Live PubMed)**, **a three-dataset trained stance classifier (SciFact + HealthVer + ManConCorpus)**, **Transformer-based Natural Language Inference (NLI)**, and **grounded generative AI synthesis via Google Gemini**, VeriSci produces calibrated verdicts (`SUPPORTED`, `CONTRADICTED`, `MIXED`, `INSUFFICIENT`) with exact citations and interactive inquest capabilities.
 
 ---
 
@@ -96,7 +28,7 @@ flowchart TD
     B2 --> C
     
     subgraph Stance ["2. Stance Classification"]
-        C --> D["Hybrid Transformer NLI Cross-Encoder<br/>(SciBERT / NLI + Linear SVM)"]
+        C --> D["Hybrid Stance Classifier<br/>(Random Forest + DistilRoBERTa NLI Cross-Encoder)"]
         D --> E["Passage Stance Stamped:<br/>SUPPORT | CONTRADICT | NEUTRAL"]
     end
     
@@ -163,7 +95,7 @@ flowchart TD
 VeriSci/
 ├── backend/
 │   ├── aggregation.py             # Verdict & confidence score aggregator
-│   ├── config.py                  # Environment & model settings
+│   ├── download_scifact.py        # SciFact dataset corpus downloader
 │   ├── data_acquisition.py        # Automated downloader for HealthVer & ManConCorpus
 │   ├── main.py                    # FastAPI server & route handlers
 │   ├── requirements.txt           # Python dependencies
@@ -379,14 +311,7 @@ Allows conversational inquest into the retrieved literature context.
 
 ---
 
-## Testing & Quality Assurance
-
-Run the automated backend test suite:
-```bash
-pytest backend/tests -v
-```
-
-## Three-Dataset ML Evidence Stance Integration (Phase 6)
+## Machine Learning Pipeline & Stance Classification
 
 VeriSci integrates three authoritative biomedical verification datasets into a unified evidence stance classification pipeline:
 
@@ -394,13 +319,40 @@ VeriSci integrates three authoritative biomedical verification datasets into a u
 2. **HealthVer** ([Sarrouti et al., NAACL-HLT 2021](https://github.com/sarrouti/HealthVer)): Health-related claims searched against PubMed and Common Crawl with multi-annotator stance labels.
 3. **ManConCorpus** ([Alamri & Stevenson, BMC Med Inform Decis Mak 2016 / PMC10919922](http://staffwww.dcs.shef.ac.uk/people/M.Stevenson/resources/bio_contradictions/)): Manually annotated scientific sentence pairs from clinical trial abstracts.
 
+### Model Comparison & Architecture Selection
+
+During development, three classical ML classifiers were systematically evaluated on 18,572 training pairs across SciFact, HealthVer, and ManConCorpus using a rich feature representation (5,000-dim TF-IDF n-grams, cosine similarity, token length deltas, word overlap, and clinical negation cues):
+
+| Candidate Model | Combined Dev Accuracy | Combined Macro F1 | Key Observations |
+| :--- | :---: | :---: | :--- |
+| **Linear SVM** (`LinearSVC` + Platt Calibration) | 66.86% | 0.5348 | Fast convergence, but sensitive to high-dimensional sparsity. |
+| **Logistic Regression** (L2 Regularized, Balanced) | 67.25% | 0.5437 | Solid linear baseline, but struggles with non-linear feature interactions. |
+| **Random Forest** (100 Trees, Balanced Weights) | **73.26%** | **0.5642** | **Best overall accuracy and Macro F1**; captures non-linear feature interactions. |
+
+### Production Model Architecture
+
+VeriSci deploys a **hybrid multi-stage inference architecture**:
+
+1. **Primary Classical Stance Classifier — Random Forest (100 Trees)**:
+   - **Model**: `RandomForestClassifier(n_estimators=100, class_weight='balanced', random_state=42)`
+   - **Role**: Computes calibrated class probability distributions (`SUPPORT`, `CONTRADICT`, `NEUTRAL`) over lexical, overlap, and TF-IDF statistical features.
+   - **Trained on**: 18,572 multi-corpus claim-evidence pairs with zero cross-split leakage.
+
+2. **Deep Semantic Reasoner — DistilRoBERTa NLI Cross-Encoder**:
+   - **Model**: `cross-encoder/nli-distilroberta-base`
+   - **Role**: Evaluates pairs in `(premise=evidence, hypothesis=claim)` format to capture complex medical negations, anaphora resolution, and directional clinical nuance (e.g., *increase* vs. *decrease*).
+
+3. **Grounded Synthesis Engine — Google Gemini**:
+   - **Model**: `gemini-3.1-flash-lite` (with automated fallback to `gemini-3.8-flash`)
+   - **Role**: Synthesizes the aggregated dossier into an authoritative, cited clinical consensus statement with strict `[E#]` citation grounding.
+
 ### Empirical Evaluation: Baseline vs. Three-Dataset Model
 
 Evaluated on held-out test splits with exact cross-split leakage prevention (0 duplicate claim-evidence pairs between train and dev):
 
 #### Table 1: Combined Held-Out Dev Set ($N = 4,599$ across SciFact, HealthVer, ManConCorpus)
 
-| Metric | SciFact Baseline | Three-Dataset Model | Absolute Difference |
+| Metric | SciFact Baseline | Three-Dataset Model (Random Forest) | Absolute Difference |
 |---|---|---|---|
 | **Accuracy** | 61.99% | **73.26%** | **+11.27 pp** |
 | **Macro F1** | 35.29% | **56.42%** | **+21.13 pp** |
@@ -411,7 +363,7 @@ Evaluated on held-out test splits with exact cross-split leakage prevention (0 d
 
 #### Table 2: Canonical SciFact Held-Out Dev Set ($N = 2,294$)
 
-| Metric | SciFact Baseline | Three-Dataset Model | Absolute Difference |
+| Metric | SciFact Baseline | Three-Dataset Model (Random Forest) | Absolute Difference |
 |---|---|---|---|
 | **Accuracy** | 77.46% | **84.66%** | **+7.20 pp** |
 | **Weighted F1** | 78.91% | **80.77%** | **+1.86 pp** |
